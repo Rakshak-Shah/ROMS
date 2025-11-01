@@ -2,12 +2,22 @@
 
 import Link from 'next/link';
 import { ChefHat, ShoppingCart, Calendar, QrCode, Star, Users } from 'lucide-react';
-import { useSearchParams } from 'next/navigation';
-import { Suspense } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { Suspense, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 
 function HomeContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const { user, loading } = useAuth();
   const tableNumber = searchParams.get('table');
+
+  // Redirect admin/staff users to admin dashboard
+  useEffect(() => {
+    if (!loading && user && (user.role === 'admin' || user.role === 'staff')) {
+      router.push('/admin/dashboard');
+    }
+  }, [user, loading, router]);
 
   return (
     <div className="bg-gray-50">

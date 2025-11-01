@@ -1,12 +1,17 @@
 'use client';
 
 import { useState } from 'react';
-import { Mail, Lock, User, Phone, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, User, Phone, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
+  const { login, register, isLoading } = useAuth();
+  const router = useRouter();
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -24,29 +29,49 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     setIsSubmitting(true);
 
-    // Simulate API call
-    setTimeout(() => {
+    try {
       if (isLogin) {
-        alert('Login successful! Welcome back.');
+        // Login
+        const loggedInUser = await login(formData.email, formData.password);
+        // Redirect based on user role
+        if (loggedInUser && (loggedInUser.role === 'admin' || loggedInUser.role === 'staff')) {
+          router.push('/admin/dashboard');
+        } else {
+          router.push('/');
+        }
       } else {
-        alert('Account created successfully! Welcome to Delicious Restaurant.');
+        // Register
+        if (formData.password !== formData.confirmPassword) {
+          throw new Error('Passwords do not match');
+        }
+        
+        const name = `${formData.firstName} ${formData.lastName}`.trim();
+        const registeredUser = await register({
+          name,
+          email: formData.email,
+          password: formData.password,
+          phone: formData.phone || undefined,
+        });
+        // Redirect based on user role
+        if (registeredUser && (registeredUser.role === 'admin' || registeredUser.role === 'staff')) {
+          router.push('/admin/dashboard');
+        } else {
+          router.push('/');
+        }
       }
-      setFormData({
-        email: '',
-        password: '',
-        confirmPassword: '',
-        firstName: '',
-        lastName: '',
-        phone: ''
-      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
       setIsSubmitting(false);
-    }, 2000);
+    }
   };
 
   const toggleMode = () => {
     setIsLogin(!isLogin);
+    setError(null);
     setFormData({
       email: '',
       password: '',
@@ -80,6 +105,13 @@ export default function LoginPage() {
 
           {/* Form */}
           <div className="px-6 py-8">
+            {error && (
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center">
+                <AlertCircle className="h-5 w-5 text-red-500 mr-3" />
+                <span className="text-red-700 text-sm">{error}</span>
+              </div>
+            )}
+            
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Sign Up Fields */}
               {!isLogin && (
@@ -158,7 +190,7 @@ export default function LoginPage() {
                     required
                     value={formData.email}
                     onChange={handleInputChange}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-black"
                     placeholder="your.email@example.com"
                   />
                 </div>
@@ -178,7 +210,7 @@ export default function LoginPage() {
                     required
                     value={formData.password}
                     onChange={handleInputChange}
-                    className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                    className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-black"
                     placeholder="••••••••"
                   />
                   <button

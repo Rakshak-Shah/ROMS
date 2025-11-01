@@ -37,24 +37,45 @@ A modern, responsive restaurant management website built with Next.js 15, React,
 
 ## Getting Started
 
-### Prerequisites
-- Node.js 18+ 
-- npm or yarn
+### Backend setup (MongoDB Atlas + API)
 
-### Installation
+1) Open backend folder and install dependencies:
+   ```bash
+   cd backend
+   npm install
+   ```
 
-1. **Install dependencies**
+2) Configure environment variables in `backend/.env`:
+   - Set MONGODB_URI with your Atlas connection string
+   - Set JWT_SECRET and JWT_REFRESH_SECRET to strong values
+   - Ensure ALLOWED_ORIGINS includes http://localhost:3000 (and your prod domain later)
+   - Adjust DEFAULT_DELIVERY_FEE, FREE_DELIVERY_THRESHOLD, and TAX_RATE to match your business rules
+
+3) Start backend in development:
+   ```bash
+   npm run dev
+   ```
+   Backend will run at http://localhost:4000 (health: /health)
+
+### Frontend setup
+
+1) From project root, install frontend dependencies:
    ```bash
    npm install
    ```
 
-2. **Run the development server**
+2) Create `.env.local` in the project root:
+   ```
+   NEXT_PUBLIC_API_URL=http://localhost:4000
+   ```
+
+3) Run the frontend dev server:
    ```bash
    npm run dev
    ```
 
-3. **Open in browser**
-   Navigate to [http://localhost:3000](http://localhost:3000)
+4) Open in browser:
+   Navigate to http://localhost:3000
 
 ## Usage Guide
 
@@ -96,56 +117,43 @@ A modern, responsive restaurant management website built with Next.js 15, React,
 
 ## Technologies Used
 
-- **Next.js 15** - React framework with App Router
-- **React 19** - UI library
-- **TypeScript** - Type safety
-- **Tailwind CSS** - Utility-first CSS framework
-- **Lucide React** - Icon library
-- **QRCode** - QR code generation
-- **React Context** - State management
+- Frontend: Next.js 15, React 19, TypeScript, Tailwind CSS, Lucide React, QRCode, React Context
+- Backend: Node.js, Express, TypeScript, MongoDB Atlas, Mongoose, JWT, bcryptjs, Winston, Nodemailer
 
 ## Project Structure
 
 ```
-src/
-├── app/                    # Next.js App Router pages
-│   ├── admin/             # Admin pages (QR generator)
-│   ├── cart/              # Shopping cart page
-│   ├── contact/           # Contact page
-│   ├── login/             # Authentication page
-│   ├── menu/              # Menu page
-│   ├── reservations/      # Table reservation page
-│   ├── reviews/           # Customer reviews page
-│   └── special/           # Special offers page
-├── components/            # Reusable components
-│   ├── FoodImage.tsx      # Food image placeholder
-│   ├── Footer.tsx         # Site footer
-│   └── Navbar.tsx         # Navigation bar
-└── contexts/              # React Context providers
-    └── CartContext.tsx    # Shopping cart state
+ROMS/
+├── backend/
+│   ├── src/
+│   │   ├── config/        # app.ts (Express), database.ts (Mongo connection)
+│   │   ├── controllers/   # Route handlers (auth, menu, orders, etc.)
+│   │   ├── middleware/    # errorHandler, auth, validate, notFound
+│   │   ├── models/        # User, MenuItem, Order, Reservation, Table, Review
+│   │   ├── routes/        # auth, menu, orders, reservations, tables, reviews, admin, user
+│   │   └── utils/         # logger
+│   ├── .env               # Backend environment variables
+│   ├── tsconfig.json
+│   └── package.json
+│
+└── src/                   # Frontend (Next.js)
+    ├── app/               # Pages (App Router)
+    ├── components/        # UI components
+    └── contexts/          # React Context (Cart)
 ```
 
-## Testing the Application
+## Backend API Endpoints (initial)
 
-1. **Test QR Code Flow**:
-   - Visit `/admin/qr-generator`
-   - Generate QR codes for tables 1-5
-   - Scan QR code or visit `/?table=1`
-   - Notice table number appears in homepage
-   - Order items and see table info in cart
+Public:
+- GET  /health
+- POST /api/auth/register, /api/auth/login
+- GET  /api/menu (placeholder)
 
-2. **Test Ordering Process**:
-   - Visit `/menu`
-   - Add items to cart from different categories
-   - View cart summary in sidebar
-   - Go to `/cart` and complete checkout
-   - Try both online and offline payment options
+Protected (after login):
+- /api/orders, /api/reservations, /api/reviews (placeholders)
+- /api/admin/* (admin only, placeholders)
 
-3. **Test Reservations**:
-   - Visit `/reservations`
-   - Fill out booking form
-   - Try submitting with missing fields (validation)
-   - Complete successful reservation
+Note: Many route handlers are scaffolds now; implement controllers to complete functionality.
 
 ## Browser Support
 
@@ -153,5 +161,10 @@ src/
 - Firefox 90+
 - Safari 14+
 - Edge 90+
+
+Notes:
+- Keep frontend and backend servers running during development.
+- Ensure backend ALLOWED_ORIGINS matches the frontend origin.
+- Do not commit secrets. Use environment variables or a secret manager.
 
 Built with ❤️ for great food lovers everywhere!

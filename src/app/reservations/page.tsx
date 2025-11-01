@@ -1,9 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Calendar, Clock, Users, Phone, Mail, User } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { apiPost } from '@/lib/api';
 
 export default function ReservationsPage() {
+  const router = useRouter();
+  const { user, isAuthenticated } = useAuth();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -14,6 +19,19 @@ export default function ReservationsPage() {
     specialRequests: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Pre-fill form with user data if authenticated
+  useEffect(() => {
+    if (user) {
+      setFormData(prev => ({
+        ...prev,
+        name: user.name || '',
+        email: user.email || '',
+        phone: user.phone || ''
+      }));
+    }
+  }, [user]);
 
   const timeSlots = [
     '11:00 AM', '11:30 AM', '12:00 PM', '12:30 PM', '1:00 PM', '1:30 PM',
@@ -62,21 +80,46 @@ export default function ReservationsPage() {
     }
 
     setIsSubmitting(true);
+    setError(null);
 
-    // Simulate API call
-    setTimeout(() => {
-      alert('Reservation confirmed! We&apos;ll send you a confirmation email shortly.');
-      setFormData({
-        name: '',
-        email: '',
-        phone: '',
-        date: '',
-        time: '',
-        guests: 2,
-        specialRequests: ''
-      });
+    try {
+      // Call backend API to create reservation
+      const reservationData = {
+        customerInfo: {
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone
+        },
+        date: formData.date,
+        time: formData.time,
+        guests: parseInt(formData.guests.toString()),
+        specialRequests: formData.specialRequests || undefined
+      };
+
+      const response = await apiPost('/api/reservations', reservationData);
+      
+      if (response.status === 'success') {
+        alert('Reservation confirmed! We will send you a confirmation email shortly.');
+        
+        // Reset form
+        setFormData({
+          name: user?.name || '',
+          email: user?.email || '',
+          phone: user?.phone || '',
+          date: '',
+          time: '',
+          guests: 2,
+          specialRequests: ''
+        });
+      } else {
+        setError('Failed to create reservation. Please try again.');
+      }
+    } catch (err: any) {
+      console.error('Error creating reservation:', err);
+      setError(err.message || 'An error occurred while creating your reservation. Please try again.');
+    } finally {
       setIsSubmitting(false);
-    }, 2000);
+    }
   };
 
   // Get today's date in YYYY-MM-DD format for min date
@@ -97,6 +140,22 @@ export default function ReservationsPage() {
           {/* Reservation Form */}
           <div className="bg-white rounded-lg shadow-sm p-8">
             <h2 className="text-2xl font-semibold mb-6">Reservation Details</h2>
+            
+            {!isAuthenticated && (
+              <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                <p className="text-sm text-amber-800">
+                  💡 <strong>Tip:</strong> <a href="/login" className="underline hover:text-amber-900">Sign in</a> to save your reservation details for faster booking.
+                </p>
+              </div>
+            )}
+
+            {error && (
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-800">
+                  ❌ {error}
+                </p>
+              </div>
+            )}
             
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Personal Information */}

@@ -6,9 +6,10 @@ import Link from 'next/link';
 import { Plus, Minus, ShoppingCart } from 'lucide-react';
 import { useCart, MenuItem } from '../../contexts/CartContext';
 import FoodImage from '../../components/FoodImage';
+import { menuService, ApiMenuItem } from '../../lib/api';
 
-// Sample menu data - in a real app, this would come from an API
-const menuData: MenuItem[] = [
+// Fallback sample menu data
+const fallbackMenuData: MenuItem[] = [
   // Appetizers
   {
     id: '1',
@@ -158,22 +159,63 @@ const categories = [
 
 function MenuContent() {
   const [selectedCategory, setSelectedCategory] = useState('appetizers');
+  const [menuData, setMenuData] = useState<MenuItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
   const { addToCart, updateQuantity, state, setTable, setServiceType } = useCart();
   const searchParams = useSearchParams();
   const tableNumber = searchParams.get('table');
   const serviceType = searchParams.get('service');
 
+  // Fetch menu items from API
   useEffect(() => {
-  if (tableNumber !== undefined && tableNumber !== null) {
-    setTable(tableNumber);
-  }
-  if (serviceType !== undefined && serviceType !== null) {
-    setServiceType(serviceType);
-  }
-}, [tableNumber, serviceType]);
+    const fetchMenuItems = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const items = await menuService.getAll();
+        
+        // Transform API items to match MenuItem interface
+        const transformedItems: MenuItem[] = items.map((item: ApiMenuItem) => ({
+          id: item._id,
+          name: item.name,
+          price: item.isSpecial && item.specialPrice ? item.specialPrice : item.price,
+          category: item.category,
+          description: item.description || '',
+          image: item.image || '/placeholder-food.jpg'
+        }));
+        
+        if (transformedItems.length > 0) {
+          setMenuData(transformedItems);
+        } else {
+          // Use fallback data if API returns empty
+          setMenuData(fallbackMenuData);
+          setError('Using sample menu data - backend may not be running');
+        }
+      } catch (err) {
+        console.error('Error fetching menu:', err);
+        setError('Failed to load menu from backend. Using sample data.');
+        setMenuData(fallbackMenuData);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-const filteredItems = menuData.filter(item => item.category === selectedCategory);
+    fetchMenuItems();
+  }, []);
+
+  // Set table and service type from URL params
+  useEffect(() => {
+    if (tableNumber !== undefined && tableNumber !== null) {
+      setTable(tableNumber);
+    }
+    if (serviceType !== undefined && serviceType !== null) {
+      setServiceType(serviceType);
+    }
+  }, [tableNumber, serviceType, setTable, setServiceType]);
+
+  const filteredItems = menuData.filter(item => item.category === selectedCategory);
 
 
 // CART HANDLER - Direct add to cart (address will be asked at checkout)
@@ -187,12 +229,29 @@ const getItemQuantity = (itemId: string) => {
 };
 
 
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="bg-gray-50 min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-amber-600 mx-auto mb-4"></div>
+          <p className="text-xl text-gray-600">Loading delicious menu items...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-gray-50 min-h-screen">
       {/* Header */}
       <div className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center">
+            {error && (
+              <div className="mb-4 bg-yellow-100 border border-yellow-400 rounded-lg p-3 inline-block">
+                <p className="text-yellow-800 text-sm">⚠️ {error}</p>
+              </div>
+            )}
             {tableNumber && (
               <div className="mb-4 bg-amber-100 rounded-lg p-3 inline-block">
                 <p className="text-amber-800 font-medium">🍽️ Ordering for Table {tableNumber}</p>
