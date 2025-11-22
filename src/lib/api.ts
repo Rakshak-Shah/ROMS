@@ -84,7 +84,8 @@ export async function apiDelete<T>(path: string, init?: RequestInit): Promise<T>
     const text = await res.text().catch(() => '');
     throw new Error(`DELETE ${url} failed: ${res.status} ${res.statusText} ${text}`);
   }
-  return res.json() as Promise<T>;
+  res.json({ message: 'Order deleted successfully' });     
+
 }
 
 export async function apiPatch<T>(path: string, data?: any, init?: RequestInit): Promise<T> {
@@ -141,8 +142,24 @@ export const menuService = {
   // Get all menu items
   async getAll(): Promise<ApiMenuItem[]> {
     try {
-      const response = await apiGet<ApiResponse<{ menuItems: ApiMenuItem[] }>>('/api/menu');
-      return response.data?.menuItems || [];
+      const response = await apiGet<any>('/api/menu');
+      console.log('Menu API raw response:', response);
+      
+      // Handle nested response structure from backend
+      // Backend returns: { status: 'success', data: { menuItems: [...] } }
+      if (response.data && response.data.menuItems) {
+        return response.data.menuItems;
+      }
+      // Fallback to direct data if different structure
+      if (response.menuItems) {
+        return response.menuItems;
+      }
+      if (Array.isArray(response)) {
+        return response;
+      }
+      
+      console.warn('Unexpected menu API response format:', response);
+      return [];
     } catch (error) {
       console.error('Error fetching menu items:', error);
       return [];
@@ -199,7 +216,7 @@ export type CreateOrderData = {
   specialInstructions?: string;
 };
 
-export type OrderResponse = {
+export type Order = {
   _id: string;
   orderNumber: string;
   status: string;
@@ -209,9 +226,9 @@ export type OrderResponse = {
 
 export const orderService = {
   // Create a new order
-  async create(orderData: CreateOrderData): Promise<OrderResponse | null> {
+  async create(orderData: CreateOrderData): Promise<Order | null> {
     try {
-      const response = await apiPost<ApiResponse<{ order: OrderResponse }>>('/api/orders', orderData);
+      const response = await apiPost<ApiResponse<{ order: Order }>>('/api/orders', orderData);
       return response.data?.order || null;
     } catch (error) {
       console.error('Error creating order:', error);

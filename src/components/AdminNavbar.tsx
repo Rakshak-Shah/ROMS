@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useRef, useEffect } from 'react';
-import { Menu, X, User, LogOut, LayoutDashboard, UtensilsCrossed, ShoppingBag, Calendar, Package, Users, Shield, Bell } from 'lucide-react';
+import { Menu, X, User, LogOut, LayoutDashboard, UtensilsCrossed, ShoppingBag, Calendar, Package } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function AdminNavbar() {
@@ -31,12 +31,11 @@ export default function AdminNavbar() {
   }, []);
 
   const navItems = [
-    { name: 'Console', href: '/admin/dashboard', icon: LayoutDashboard },
-    { name: 'Cuisine', href: '/admin/menu', icon: UtensilsCrossed },
-    { name: 'Requests', href: '/admin/orders', icon: ShoppingBag },
-    { name: 'Bookings', href: '/admin/reservations', icon: Calendar },
-    { name: 'Vault', href: '/admin/inventory', icon: Package },
-    { name: 'Staff', href: '/admin/staff', icon: Users },
+    { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
+    { name: 'Menu', href: '/admin/menu', icon: UtensilsCrossed },
+    { name: 'Orders', href: '/admin/orders', icon: ShoppingBag },
+    { name: 'Reservations', href: '/admin/reservations', icon: Calendar },
+    { name: 'Inventory', href: '/admin/inventory', icon: Package },
   ];
 
   return (

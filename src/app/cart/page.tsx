@@ -2,17 +2,34 @@
 
 import { useState, Suspense } from 'react';
 import { useCart } from '../../contexts/CartContext';
-import { useSearchParams } from 'next/navigation';
-import { Plus, Minus, Trash2, CreditCard, DollarSign, MapPin, Edit, Truck, ShoppingBag, ArrowRight, Wallet } from 'lucide-react';
-import Link from 'next/link';
-import DeliveryAddress from '../../components/deliveryaddress';
-import PaymentStatus from './payment-status';
-import { orderService, CreateOrderData } from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
-import { useToast } from '@/components/Toast';
-import SuccessModal from '@/components/SuccessModal';
+import { Plus, Minus, Trash2, DollarSign, MapPin, Edit, Truck } from 'lucide-react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import DeliveryAddress from '../../components/deliveryaddress';
+import { orderService } from '../../lib/api';
 
 function CartContent() {
+  const [error, setError] = useState<string | null>(null);
+  
+  // Wrap cart hook in try-catch
+  let cartState;
+  try {
+    cartState = useCart();
+  } catch (err) {
+    console.error('Error accessing cart context:', err);
+    return (
+      <div className="bg-gray-50 min-h-screen py-16">
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <div className="bg-white rounded-lg shadow-sm p-12">
+            <h1 className="text-3xl font-bold text-gray-900 mb-4">Cart Error</h1>
+            <p className="text-gray-600 mb-8">There was an error loading your cart. Please try refreshing the page.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
   const { 
     state, 
     updateQuantity, 
@@ -22,21 +39,12 @@ function CartContent() {
     getFinalTotal,
     clearCart, 
     setDeliveryAddress 
-  } = useCart();
-  const { showToast } = useToast();
-  const [paymentMethod, setPaymentMethod] = useState<'online' | 'offline'>('online');
+  } = cartState;
+  
+  const { user, isAuthenticated } = useAuth();
+  const router = useRouter();
   const [isProcessing, setIsProcessing] = useState(false);
   const [showAddressModal, setShowAddressModal] = useState(false);
-  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
-  const [lastOrderNumber, setLastOrderNumber] = useState<string>('');
-  const { user } = useAuth();
-  
-  const searchParams = useSearchParams();
-  const paymentStatus = searchParams.get('payment');
-  
-  if (paymentStatus) {
-    return <PaymentStatus />;
-  }
 
   const handleAddressConfirm = (address: string) => {
     setDeliveryAddress(address);
@@ -44,62 +52,23 @@ function CartContent() {
     showToast('Delivery address updated', 'success');
   };
 
-  const handleEsewaPayment = async () => {
-    const orderTotal = getFinalTotal();
-    const orderDetails = {
-      amount: orderTotal,
-      tax_amount: (getTotalPrice() + getDeliveryFee()) * 0.085,
-      total_amount: orderTotal,
-      product_code: 'DELICIOUS_RESTAURANT',
-      product_service_charge: 0,
-      product_delivery_charge: getDeliveryFee(),
-      success_url: `${window.location.origin}/cart?payment=success`,
-      failure_url: `${window.location.origin}/cart?payment=failed`,
-      transaction_uuid: `TXN-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-    };
-
-    try {
-      const form = document.createElement('form');
-      form.method = 'POST';
-      form.action = 'https://uat.esewa.com.np/epay/main';
-      
-      const fields = {
-        'tAmt': orderDetails.total_amount.toFixed(2),
-        'amt': orderDetails.amount.toFixed(2), 
-        'txAmt': orderDetails.tax_amount.toFixed(2),
-        'psc': orderDetails.product_service_charge,
-        'pdc': orderDetails.product_delivery_charge.toFixed(2),
-        'scd': orderDetails.product_code,
-        'pid': orderDetails.transaction_uuid,
-        'su': orderDetails.success_url,
-        'fu': orderDetails.failure_url
-      };
-
-      Object.keys(fields).forEach(key => {
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = key;
-        input.value = fields[key as keyof typeof fields].toString();
-        form.appendChild(input);
-      });
-
-      document.body.appendChild(form);
-      form.submit();
-      document.body.removeChild(form);
-      
-    } catch (error) {
-      showToast('Payment initialization failed. Please try again.', 'error');
-    }
+  const handleAddressCancel = () => {
+    setShowAddressModal(false);
   };
+
 
   const handleCheckout = async () => {
     if (state.items.length === 0) {
       showToast('Your cart is empty', 'error');
       return;
     }
-    
-    if (!user) {
-      showToast('Please sign in to complete your order', 'info');
+
+    // AUTHENTICATION CHECK - Users must be logged in to place orders
+    if (!isAuthenticated || !user) {
+      const confirmed = confirm('You need to login to place an order. Would you like to login now?');
+      if (confirmed) {
+        router.push('/login');
+      }
       return;
     }
 
@@ -108,15 +77,25 @@ function CartContent() {
       return;
     }
 
-    if (paymentMethod === 'online') {
-      await handleEsewaPayment();
-      return;
-    }
-
     setIsProcessing(true);
     
     try {
-      const orderData: CreateOrderData = {
+      // CALCULATE FINAL ORDER TOTALS
+      const subtotal = getTotalPrice();
+      const deliveryFee = getDeliveryFee();
+      const tax = (subtotal + deliveryFee) * 0.085;
+      const orderTotal = getFinalTotal();
+      
+      // Determine order type based on service type
+      let orderType: 'dine-in' | 'delivery' | 'takeout' = 'dine-in';
+      if (state.serviceType === 'delivery') {
+        orderType = 'delivery';
+      } else if (!state.tableNumber) {
+        orderType = 'takeout';
+      }
+
+      // Prepare order data for API
+      const orderData = {
         items: state.items.map(item => ({
           menuItem: item.id,
           name: item.name,
@@ -124,18 +103,40 @@ function CartContent() {
           quantity: item.quantity,
           subtotal: item.price * item.quantity
         })),
-        orderType: state.serviceType === 'delivery' ? 'delivery' : (state.tableNumber ? 'dine-in' : 'takeout'),
+        orderType,
         tableNumber: state.tableNumber ? parseInt(state.tableNumber) : undefined,
-        deliveryAddress: state.serviceType === 'delivery' && state.deliveryAddress ? { street: state.deliveryAddress } : undefined,
-        paymentMethod: 'cash',
+        deliveryAddress: state.deliveryAddress ? {
+          street: state.deliveryAddress,
+          city: 'N/A',
+          state: '',
+          zipCode: ''
+        } : undefined,
+        paymentMethod: 'cash' as const,
+        specialInstructions: ''
       };
 
+      // Submit order to backend
       const response = await orderService.create(orderData);
-      setLastOrderNumber(response?.orderNumber || 'ORD-PENDING');
-      setIsSuccessModalOpen(true);
-      clearCart();
+      
+      if (response) {
+        // Build success message
+        let deliveryInfo = '';
+        if (state.serviceType === 'delivery') {
+          deliveryInfo = `\n\n🚚 Delivery Address:\n${state.deliveryAddress}\n${deliveryFee > 0 ? `Delivery Fee: $${deliveryFee.toFixed(2)}` : 'FREE DELIVERY! 🎉'}`;
+        } else if (state.tableNumber) {
+          deliveryInfo = `\n\n🍽️ Table ${state.tableNumber}`;
+        }
+        
+        const orderSummary = `Order placed successfully! ✅\n\n📋 Order #${response.orderNumber}\n- Items: ${state.items.length}\n- Subtotal: $${subtotal.toFixed(2)}${deliveryFee > 0 ? `\n- Delivery: $${deliveryFee.toFixed(2)}` : ''}\n- Tax: $${tax.toFixed(2)}\n- Total: $${orderTotal.toFixed(2)}\n\n💳 Please pay at the counter.${deliveryInfo}\n\nYour order is now visible to the admin/staff.`;
+        
+        alert(orderSummary);
+        clearCart();
+      } else {
+        throw new Error('Failed to create order');
+      }
     } catch (error) {
-      showToast('Failed to place order. Please try again.', 'error');
+      console.error('Error placing order:', error);
+      alert('Failed to place order. Please try again or contact staff.');
     } finally {
       setIsProcessing(false);
     }
@@ -168,26 +169,50 @@ function CartContent() {
   }
 
   return (
-    <div className="bg-[#0a0a0a] min-h-screen pt-28 pb-20 relative">
-      <div className="absolute top-0 left-0 w-full h-[40vh] bg-amber-500/5 blur-[150px] pointer-events-none"></div>
-      
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="mb-12 animate-fade-in-down">
-          <h1 className="text-5xl md:text-6xl font-black text-white mb-6 tracking-tighter">Your <span className="text-gradient">Selection</span></h1>
-          <div className="flex flex-wrap gap-4">
-             {state.tableNumber && (
-               <div className="glass-panel px-4 py-2 rounded-full border border-amber-500/20 text-amber-500 flex items-center gap-2">
-                 <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
-                 <span className="text-xs font-black uppercase tracking-widest leading-none">Table {state.tableNumber}</span>
-               </div>
-             )}
-             {state.serviceType === 'delivery' && (
-               <div className="glass-panel px-4 py-2 rounded-full border border-emerald-500/20 text-emerald-500 flex items-center gap-2">
-                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                 <span className="text-xs font-black uppercase tracking-widest leading-none">In-Transit Gourmet</span>
-               </div>
-             )}
-          </div>
+    <div className="bg-gray-50 min-h-screen py-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="mb-8 animate-fade-in-down">
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">Your Order</h1>
+          
+          {/* LOGIN WARNING - Shows if user is not authenticated */}
+          {!isAuthenticated && (
+            <div className="mb-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-start">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3 flex-1">
+                  <p className="text-sm font-medium text-blue-800">
+                    Please login to place your order
+                  </p>
+                  <p className="mt-1 text-sm text-blue-700">
+                    You need to be logged in to complete checkout.
+                  </p>
+                  <div className="mt-3">
+                    <Link
+                      href="/login"
+                      className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    >
+                      Login Now
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {state.tableNumber && (
+            <div className="mb-4 bg-amber-100 rounded-lg p-3 inline-block animate-pulse">
+              <p className="text-amber-800 font-medium">🍽️ Table {state.tableNumber}</p>
+            </div>
+          )}
+          {state.serviceType === 'delivery' && (
+            <div className="mb-4 bg-green-100 rounded-lg p-3 inline-block animate-pulse">
+              <p className="text-green-800 font-medium">🚚 Delivery Service</p>
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
@@ -217,11 +242,10 @@ function CartContent() {
               </div>
             )}
             
-            <div className="glass-panel rounded-[40px] border border-white/5 shadow-2xl overflow-hidden animate-fade-in-up stagger-1">
-              <div className="p-10 border-b border-white/5 bg-white/5">
-                <h2 className="text-2xl font-black text-white tracking-tight uppercase flex items-center gap-3">
-                  <ShoppingBag className="text-amber-500" size={24} /> Items in Cart
-                </h2>
+            {/* ORDER ITEMS SECTION */}
+            <div className="bg-white rounded-lg shadow-sm animate-slide-in-left text-black">
+              <div className="p-6 border-b">
+                <h2 className="text-xl font-semibold">Order Items</h2>
               </div>
               <div className="divide-y divide-white/5">
                 {state.items.map((item, index) => (
@@ -283,85 +307,85 @@ function CartContent() {
                     <span className="text-gray-500 font-bold uppercase text-[10px] tracking-[0.2em]">Subtotal</span>
                     <span className="text-white font-black text-lg">${getTotalPrice().toFixed(2)}</span>
                   </div>
-                  
-                  {state.serviceType === 'delivery' && (
-                    <div className="flex justify-between items-center group">
-                      <div className="flex items-center gap-2">
-                        <Truck size={14} className="text-emerald-500" />
-                        <span className="text-gray-500 font-bold uppercase text-[10px] tracking-[0.2em]">Service Fee</span>
-                      </div>
-                      <span className={getDeliveryFee() === 0 ? 'text-emerald-500 font-black' : 'text-white font-black'}>
-                        {getDeliveryFee() > 0 ? `$${getDeliveryFee().toFixed(2)}` : 'GRATIS'}
-                      </span>
+                )}
+                
+                <div className="flex justify-between">
+                  <span>Tax (8.5%):</span>
+                  <span>${((getTotalPrice() + getDeliveryFee()) * 0.085).toFixed(2)}</span>
+                </div>
+                
+                {/* VISUAL SEPARATOR */}
+                <div className="border-t pt-3 mt-4">
+                  <div className="flex justify-between font-bold text-lg">
+                    <span>Total:</span>
+                    <span className="text-amber-600">${getFinalTotal().toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Payment Information */}
+              <div className="mb-6">
+                <h3 className="font-semibold mb-3">Payment Method</h3>
+                <div className="flex items-center space-x-3 p-3 bg-amber-50 rounded-lg">
+                  <DollarSign size={20} className="text-amber-600" />
+                  <span className="text-gray-700 font-medium">Pay at Counter</span>
+                </div>
+                <p className="text-sm text-gray-600 mt-2">
+                  Complete your payment at the counter when you arrive or upon delivery.
+                </p>
+              </div>
+
+              {/* Checkout Button */}
+              <button
+                onClick={handleCheckout}
+                disabled={isProcessing}
+                className="w-full bg-amber-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-amber-700 hover:scale-105 hover:shadow-lg transition-all duration-300 transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              >
+                <span className={isProcessing ? 'loading-dots' : ''}>
+                  {isProcessing 
+                    ? 'Processing Order...' 
+                    : `Place Order - $${getFinalTotal().toFixed(2)}`
+                  }
+                </span>
+              </button>
+
+              <div className="mt-4 text-center">
+                <Link
+                  href="/menu"
+                  className="text-amber-600 hover:text-amber-700 font-medium"
+                >
+                  ← Continue Shopping
+                </Link>
+              </div>
+
+              {/* DELIVERY ORDER INFO - Shows delivery details and requirements */}
+              {state.serviceType === 'delivery' && (
+                <div className="mt-6 p-4 bg-green-50 rounded-lg">
+                  <h4 className="font-semibold text-green-800 mb-2">🚚 Delivery Order</h4>
+                  {state.deliveryAddress ? (
+                    <div className="text-sm text-green-700 space-y-1">
+                      <p>✅ Delivery address confirmed</p>
+                      <p>📍 {state.deliveryAddress}</p>
+                      {getDeliveryFee() === 0 && (
+                        <p className="font-medium">🎉 Free delivery on this order!</p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-sm text-green-700">
+                      <p>📍 Delivery address will be collected when you place the order</p>
                     </div>
                   )}
-                  
-                  <div className="flex justify-between items-center group">
-                    <span className="text-gray-500 font-bold uppercase text-[10px] tracking-[0.2em]">Luxury Tax (8.5%)</span>
-                    <span className="text-white font-black text-lg">${((getTotalPrice() + getDeliveryFee()) * 0.085).toFixed(2)}</span>
-                  </div>
-                  
-                  <div className="h-px bg-white/5 my-6"></div>
-                  
-                  <div className="flex justify-between items-end">
-                    <div>
-                        <p className="text-xs text-gray-400 font-black uppercase tracking-widest mb-1">Total Amount</p>
-                        <p className="text-5xl font-black text-white tracking-tighter">${getFinalTotal().toFixed(2)}</p>
-                    </div>
-                    <div className="bg-amber-500/20 px-3 py-1 rounded-full text-amber-500 text-[10px] font-black uppercase tracking-tighter">Verified</div>
-                  </div>
-               </div>
-
-               {/* Payment Strategy Selection */}
-               <div className="mb-12">
-                  <p className="text-xs text-gray-500 font-black uppercase tracking-widest mb-6 border-l-2 border-amber-500 pl-4">Payment Strategy</p>
-                  <div className="grid grid-cols-1 gap-4">
-                    <button
-                      onClick={() => setPaymentMethod('online')}
-                      className={`flex items-center justify-between p-5 rounded-3xl transition-all border ${
-                        paymentMethod === 'online' 
-                          ? 'bg-gradient-to-r from-amber-500/20 to-transparent border-amber-500/40 text-white' 
-                          : 'bg-white/5 border-white/5 text-gray-500 hover:text-gray-300'
-                      }`}
-                    >
-                      <div className="flex items-center gap-4">
-                        <Wallet size={20} className={paymentMethod === 'online' ? 'text-amber-500' : ''} />
-                        <span className="font-black text-xs uppercase tracking-widest">eSewa Digital</span>
-                      </div>
-                      {paymentMethod === 'online' && <div className="w-2 h-2 rounded-full bg-amber-500 shadow-glow"></div>}
-                    </button>
-
-                    <button
-                      onClick={() => setPaymentMethod('offline')}
-                      className={`flex items-center justify-between p-5 rounded-3xl transition-all border ${
-                        paymentMethod === 'offline' 
-                          ? 'bg-gradient-to-r from-emerald-500/20 to-transparent border-emerald-500/40 text-white' 
-                          : 'bg-white/5 border-white/5 text-gray-500 hover:text-gray-300'
-                      }`}
-                    >
-                      <div className="flex items-center gap-4">
-                        <DollarSign size={20} className={paymentMethod === 'offline' ? 'text-emerald-500' : ''} />
-                        <span className="font-black text-xs uppercase tracking-widest">At Counter</span>
-                      </div>
-                      {paymentMethod === 'offline' && <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-glow"></div>}
-                    </button>
-                  </div>
-               </div>
-
-               <button
-                 onClick={handleCheckout}
-                 disabled={isProcessing}
-                 className="group w-full bg-white text-black py-6 rounded-[32px] font-black text-xl hover:bg-amber-500 hover:text-white transition-all duration-500 shadow-[0_20px_40px_rgba(0,0,0,0.4)] active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50"
-               >
-                 {isProcessing ? 'AUTHENTICATING...' : (paymentMethod === 'online' ? 'PAY SECURELY' : 'PLACE ORDER')}
-                 <ArrowRight size={22} className="opacity-0 group-hover:opacity-100 group-hover:translate-x-2 transition-all" />
-               </button>
-
-               <div className="mt-10 text-center">
-                  <Link href="/menu" className="text-xs font-black uppercase tracking-[0.3em] text-gray-600 hover:text-amber-500 transition-colors">
-                    ← Back to selection
-                  </Link>
-               </div>
+                </div>
+              )}
+              
+              {state.tableNumber && !state.serviceType && (
+                <div className="mt-6 p-4 bg-amber-50 rounded-lg">
+                  <h4 className="font-semibold text-amber-800 mb-2">🍽️ Dine-In Order</h4>
+                  <p className="text-sm text-amber-700">
+                    Your order will be delivered to Table {state.tableNumber}
+                  </p>
+                </div>
+              )}
             </div>
           </aside>
         </div>
@@ -388,7 +412,16 @@ function CartContent() {
 
 export default function CartPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center text-gray-600 uppercase tracking-widest font-black text-xs animate-pulse">Synchronizing Cart...</div>}>
+    <Suspense fallback={
+      <div className="bg-gray-50 min-h-screen py-16">
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <div className="bg-white rounded-lg shadow-sm p-12">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-amber-600 mx-auto mb-4"></div>
+            <p className="text-xl text-gray-600">Loading your cart...</p>
+          </div>
+        </div>
+      </div>
+    }>
       <CartContent />
     </Suspense>
   );

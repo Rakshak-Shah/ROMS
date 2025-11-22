@@ -118,7 +118,6 @@ const OrderItemSchema = new Schema<IOrderItem>({
 const OrderSchema = new Schema<IOrder>({
   orderNumber: {
     type: String,
-    required: true,
     unique: true,
     index: true
   },
@@ -288,14 +287,17 @@ const OrderSchema = new Schema<IOrder>({
   toJSON: { virtuals: true }
 });
 
-// Generate order number and status history before validation
+// Generate order number
 OrderSchema.pre('validate', function(next) {
-  if (this.isNew && !this.orderNumber) {
+  if (!this.orderNumber) {
     const timestamp = Date.now().toString().slice(-6);
     const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
     this.orderNumber = `ORD${timestamp}${random}`;
   }
-  
+  next();
+});
+
+OrderSchema.pre('save', function(next) {
   // Initialize status history if not exists
   if (this.isNew && this.statusHistory.length === 0) {
     this.statusHistory.push({

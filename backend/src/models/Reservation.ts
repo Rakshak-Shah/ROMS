@@ -112,7 +112,7 @@ const ReservationSchema = new Schema<IReservation>({
   },
   confirmationCode: {
     type: String,
-    required: true,
+    required: false,
     unique: true
   },
   

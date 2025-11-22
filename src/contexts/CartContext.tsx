@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useReducer, ReactNode } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useRef, useCallback, ReactNode } from 'react';
 
 interface MenuItem {
   id: string;
@@ -139,67 +139,124 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     freeDeliveryThreshold: 50.00 // Change this value to modify free delivery minimum
   };
   
-  const [state, dispatch] = useReducer(cartReducer, initialState);
+  // Load state from localStorage on mount
+  const loadState = (): CartState => {
+    if (typeof window === 'undefined') return initialState;
+    try {
+      const savedState = localStorage.getItem('cart_state');
+      if (savedState) {
+        const parsed = JSON.parse(savedState);
+        // Validate the loaded state
+        return {
+          items: Array.isArray(parsed.items) ? parsed.items : [],
+          tableNumber: parsed.tableNumber,
+          serviceType: parsed.serviceType,
+          deliveryAddress: parsed.deliveryAddress,
+          deliveryFee: typeof parsed.deliveryFee === 'number' ? parsed.deliveryFee : initialState.deliveryFee,
+          freeDeliveryThreshold: typeof parsed.freeDeliveryThreshold === 'number' ? parsed.freeDeliveryThreshold : initialState.freeDeliveryThreshold
+        };
+      }
+    } catch (error) {
+      console.error('Error loading cart state from localStorage:', error);
+      // Clear corrupted data
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('cart_state');
+      }
+    }
+    return initialState;
+  };
+  
+  const [state, dispatch] = useReducer(cartReducer, initialState, loadState);
+  
+  // Use ref to track if this is initial mount
+  const isInitialMount = useRef(true);
 
-  const addToCart = (item: MenuItem) => {
+  // Save state to localStorage whenever it changes (skip initial mount to avoid loops)
+  useEffect(() => {
+    // Skip saving on initial mount (data just loaded from localStorage)
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+    
+    if (typeof window !== 'undefined') {
+      try {
+        // Create a clean copy of state to avoid circular references
+        const stateToSave = {
+          items: state.items,
+          tableNumber: state.tableNumber,
+          serviceType: state.serviceType,
+          deliveryAddress: state.deliveryAddress,
+          deliveryFee: state.deliveryFee,
+          freeDeliveryThreshold: state.freeDeliveryThreshold
+        };
+        localStorage.setItem('cart_state', JSON.stringify(stateToSave));
+      } catch (error) {
+        console.error('Error saving cart state to localStorage:', error);
+      }
+    }
+  }, [state]);
+
+  const addToCart = useCallback((item: MenuItem) => {
     dispatch({ type: 'ADD_ITEM', payload: item });
-  };
+  }, []);
 
-  const removeFromCart = (id: string) => {
+  const removeFromCart = useCallback((id: string) => {
     dispatch({ type: 'REMOVE_ITEM', payload: id });
-  };
+  }, []);
 
-  const updateQuantity = (id: string, quantity: number) => {
+  const updateQuantity = useCallback((id: string, quantity: number) => {
     dispatch({ type: 'UPDATE_QUANTITY', payload: { id, quantity } });
-  };
+  }, []);
 
-  const clearCart = () => {
+  const clearCart = useCallback(() => {
     dispatch({ type: 'CLEAR_CART' });
-  };
+  }, []);
 
-  const setTable = (tableNumber: string) => {
+  const setTable = useCallback((tableNumber: string) => {
     dispatch({ type: 'SET_TABLE', payload: tableNumber });
-  };
+  }, []);
 
-  const setServiceType = (serviceType: string) => {
+  const setServiceType = useCallback((serviceType: string) => {
     dispatch({ type: 'SET_SERVICE_TYPE', payload: serviceType });
-  };
+  }, []);
 
-  const setDeliveryAddress = (address: string) => {
+  const setDeliveryAddress = useCallback((address: string) => {
     dispatch({ type: 'SET_DELIVERY_ADDRESS', payload: address });
-  };
+  }, []);
 
-  const updateDeliveryConfig = (config: { deliveryFee?: number; freeDeliveryThreshold?: number }) => {
+  const updateDeliveryConfig = useCallback((config: { deliveryFee?: number; freeDeliveryThreshold?: number }) => {
     dispatch({ type: 'UPDATE_DELIVERY_CONFIG', payload: config });
-  };
+  }, []);
 
-  const getTotalPrice = () => {
+  const getTotalPrice = useCallback(() => {
     return state.items.reduce((total, item) => total + item.price * item.quantity, 0);
-  };
+  }, [state.items]);
 
-  const getTotalItems = () => {
+  const getTotalItems = useCallback(() => {
     return state.items.reduce((total, item) => total + item.quantity, 0);
-  };
+  }, [state.items]);
 
   // DELIVERY FEE CALCULATION - Modify this logic to change how delivery fees are calculated
-  const getDeliveryFee = () => {
+  const getDeliveryFee = useCallback(() => {
     // Only apply delivery fee for delivery orders
     if (state.serviceType !== 'delivery') return 0;
     
-    const subtotal = getTotalPrice();
+    const subtotal = state.items.reduce((total, item) => total + item.price * item.quantity, 0);
     // Free delivery if order exceeds threshold
     if (subtotal >= state.freeDeliveryThreshold) return 0;
     
     return state.deliveryFee;
-  };
+  }, [state.serviceType, state.items, state.freeDeliveryThreshold, state.deliveryFee]);
 
   // TOTAL CALCULATION - Includes subtotal + delivery fee + tax
-  const getFinalTotal = () => {
-    const subtotal = getTotalPrice();
-    const deliveryFee = getDeliveryFee();
+  const getFinalTotal = useCallback(() => {
+    const subtotal = state.items.reduce((total, item) => total + item.price * item.quantity, 0);
+    const deliveryFee = state.serviceType === 'delivery' ? 
+      (subtotal >= state.freeDeliveryThreshold ? 0 : state.deliveryFee) : 0;
     const tax = (subtotal + deliveryFee) * 0.085; // 8.5% tax on subtotal + delivery
     return subtotal + deliveryFee + tax;
-  };
+  }, [state.items, state.serviceType, state.freeDeliveryThreshold, state.deliveryFee]);
 
   return (
     <CartContext.Provider

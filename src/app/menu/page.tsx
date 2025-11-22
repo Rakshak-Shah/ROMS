@@ -8,6 +8,147 @@ import { useCart, MenuItem } from '../../contexts/CartContext';
 import FoodImage from '../../components/FoodImage';
 import { menuService, ApiMenuItem } from '../../lib/api';
 
+// Fallback sample menu data
+const fallbackMenuData: MenuItem[] = [
+  // Appetizers
+  {
+    id: '1',
+    name: 'Daal Bhaat',
+    price: 12.99,
+    category: 'appetizers',
+    description: 'Toasted bread topped with fresh tomatoes, basil, garlic, and extra virgin olive oil',
+    image: '/placeholder-food.jpg'
+  },
+  {
+    id: '2',
+    name: 'Calamari Fritti',
+    price: 15.99,
+    category: 'appetizers',
+    description: 'Crispy fried squid rings served with marinara sauce and lemon',
+    image: '/placeholder-food.jpg'
+  },
+  {
+    id: '3',
+    name: 'Antipasto Platter',
+    price: 18.99,
+    category: 'appetizers',
+    description: 'Selection of cured meats, cheeses, olives, and marinated vegetables',
+    image: '/placeholder-food.jpg'
+  },
+
+  // Main Courses
+  {
+    id: '4',
+    name: 'Grilled Salmon',
+    price: 28.99,
+    category: 'mains',
+    description: 'Fresh Atlantic salmon grilled to perfection with lemon herb butter',
+    image: '/placeholder-food.jpg'
+  },
+  {
+    id: '5',
+    name: 'Ribeye Steak',
+    price: 35.99,
+    category: 'mains',
+    description: '12oz prime ribeye steak grilled to your liking with garlic mashed potatoes',
+    image: '/placeholder-food.jpg'
+  },
+  {
+    id: '6',
+    name: 'Lobster Thermidor',
+    price: 42.99,
+    category: 'mains',
+    description: 'Fresh lobster in a rich, creamy sauce with cheese and herbs',
+    image: '/placeholder-food.jpg'
+  },
+  {
+    id: '7',
+    name: 'Chicken Parmesan',
+    price: 24.99,
+    category: 'mains',
+    description: 'Breaded chicken breast topped with marinara sauce and mozzarella',
+    image: '/placeholder-food.jpg'
+  },
+
+  // Pasta
+  {
+    id: '8',
+    name: 'Spaghetti Carbonara',
+    price: 19.99,
+    category: 'pasta',
+    description: 'Classic Italian pasta with eggs, cheese, pancetta, and black pepper',
+    image: '/placeholder-food.jpg'
+  },
+  {
+    id: '9',
+    name: 'Fettuccine Alfredo',
+    price: 17.99,
+    category: 'pasta',
+    description: 'Fresh fettuccine pasta in a rich, creamy parmesan sauce',
+    image: '/placeholder-food.jpg'
+  },
+  {
+    id: '10',
+    name: 'Penne Arrabbiata',
+    price: 16.99,
+    category: 'pasta',
+    description: 'Penne pasta in a spicy tomato sauce with garlic and chili',
+    image: '/placeholder-food.jpg'
+  },
+
+  // Desserts
+  {
+    id: '11',
+    name: 'Tiramisu',
+    price: 9.99,
+    category: 'desserts',
+    description: 'Classic Italian dessert with coffee-soaked ladyfingers and mascarpone',
+    image: '/placeholder-food.jpg'
+  },
+  {
+    id: '12',
+    name: 'Chocolate Lava Cake',
+    price: 8.99,
+    category: 'desserts',
+    description: 'Warm chocolate cake with a molten chocolate center, served with vanilla ice cream',
+    image: '/placeholder-food.jpg'
+  },
+  {
+    id: '13',
+    name: 'Panna Cotta',
+    price: 7.99,
+    category: 'desserts',
+    description: 'Silky smooth vanilla custard topped with berry compote',
+    image: '/placeholder-food.jpg'
+  },
+
+  // Beverages
+  {
+    id: '14',
+    name: 'House Wine (Glass)',
+    price: 8.99,
+    category: 'beverages',
+    description: 'Red or white wine from our carefully selected house collection',
+    image: '/placeholder-food.jpg'
+  },
+  {
+    id: '15',
+    name: 'Craft Beer',
+    price: 6.99,
+    category: 'beverages',
+    description: 'Selection of local craft beers on tap',
+    image: '/placeholder-food.jpg'
+  },
+  {
+    id: '16',
+    name: 'Fresh Juice',
+    price: 4.99,
+    category: 'beverages',
+    description: 'Freshly squeezed orange, apple, or grapefruit juice',
+    image: '/placeholder-food.jpg'
+  }
+];
+
 const categories = [
   { id: 'appetizers', name: 'Appetizers' },
   { id: 'mains', name: 'Main Courses' },
@@ -32,25 +173,35 @@ function MenuContent() {
       try {
         setIsLoading(true);
         setError(null);
-        const items = await menuService.getAll();
         
-        if (Array.isArray(items)) {
-          const transformedItems: MenuItem[] = items.map((item: ApiMenuItem) => ({
-            id: item._id,
-            name: item.name,
-            price: item.isSpecial && item.specialPrice ? item.specialPrice : item.price,
-            category: item.category,
-            description: item.description || '',
-            image: item.image || '/placeholder-food.jpg'
-          }));
+        // Fetch menu items from backend API
+        const items = await menuService.getAll();
+        console.log('Fetched menu items from API:', items.length, 'items');
+        
+        // Transform API items to match MenuItem interface
+        const transformedItems: MenuItem[] = items.map((item: ApiMenuItem) => ({
+          id: item._id,
+          name: item.name,
+          price: item.isSpecial && item.specialPrice ? item.specialPrice : item.price,
+          category: item.category,
+          description: item.description || '',
+          image: item.image || '/placeholder-food.jpg'
+        }));
+        
+        if (transformedItems.length > 0) {
+          console.log('Successfully loaded', transformedItems.length, 'menu items from database');
           setMenuData(transformedItems);
+          setError(null);
         } else {
-          console.error('Menu data is not an array:', items);
-          setError('Invalid menu data format received.');
+          // Use fallback data if API returns empty
+          console.warn('No menu items found in database, using fallback data');
+          setMenuData(fallbackMenuData);
+          setError('Using sample menu data - backend database is empty. Run "npm run seed" in backend folder.');
         }
       } catch (err) {
-        console.error('Error fetching menu:', err);
-        setError('Failed to connect to backend. Please ensure the server is running.');
+        console.error('Error fetching menu from backend:', err);
+        setError('Failed to connect to backend API. Using sample data. Make sure backend is running.');
+        setMenuData(fallbackMenuData);
       } finally {
         setIsLoading(false);
       }
@@ -59,10 +210,17 @@ function MenuContent() {
     fetchMenuItems();
   }, []);
 
+  // Set table and service type from URL params (avoid infinite loops)
   useEffect(() => {
-    if (tableNumber) setTable(tableNumber);
-    if (serviceType) setServiceType(serviceType);
-  }, [tableNumber, serviceType, setTable, setServiceType]);
+    // Only update if different from current state
+    if (tableNumber !== null && tableNumber !== undefined && state.tableNumber !== tableNumber) {
+      setTable(tableNumber);
+    }
+    if (serviceType !== null && serviceType !== undefined && state.serviceType !== serviceType) {
+      setServiceType(serviceType);
+    }
+    // Do NOT include setTable/setServiceType in deps to avoid identity changes triggering loops
+  }, [tableNumber, serviceType, state.tableNumber, state.serviceType]);
 
   const filteredItems = menuData.filter(item => item.category === selectedCategory);
   const getItemQuantity = (itemId: string) => state.items.find(item => item.id === itemId)?.quantity || 0;
@@ -154,14 +312,33 @@ function MenuContent() {
                       {state.items.reduce((sum, item) => sum + item.quantity, 0)} items
                     </div>
                   </div>
+                  {state.serviceType === 'delivery' && (
+                    <div className="text-xs text-green-600 mb-2">
+                      🚚 Delivery Order
+                    </div>
+                  )}
                   <Link
                     href="/cart"
-                    className="group w-full bg-white text-black py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-amber-500 hover:text-white transition-all duration-300 active:scale-95 shadow-xl"
+                    onClick={(e) => {
+                      console.log('View Cart clicked');
+                      console.log('Cart items:', state.items.length);
+                      console.log('Service type:', state.serviceType);
+                    }}
+                    className="mt-3 w-full bg-amber-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-amber-700 transition-colors flex items-center justify-center space-x-2"
                   >
                     <ShoppingCart className="w-5 h-5" />
                     <span>View Shopping Cart</span>
                     <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
                   </Link>
+                  {/* Debug link - remove in production */}
+                  {process.env.NODE_ENV === 'development' && (
+                    <Link
+                      href="/debug/cart"
+                      className="mt-2 w-full bg-gray-200 text-gray-700 py-1 px-2 rounded text-xs text-center block hover:bg-gray-300 transition-colors"
+                    >
+                      Debug Cart Issues
+                    </Link>
+                  )}
                 </div>
               )}
             </div>
@@ -204,10 +381,10 @@ function MenuContent() {
                             >
                               <Minus size={18} />
                             </button>
-                            <span className="w-10 text-center font-bold text-white text-lg">{quantity}</span>
+                            <span className="font-semibold text-lg animate-pulse text-black">{quantity}</span>
                             <button
-                              onClick={() => addToCart(item)}
-                              className="w-10 h-10 rounded-xl bg-amber-500 flex items-center justify-center hover:bg-amber-600 transition-all text-white shadow-lg"
+                              onClick={() => handleAddToCart(item)}
+                              className="w-8 h-8 rounded-full bg-amber-600  flex items-center justify-center hover:bg-amber-700 hover:scale-110 transition-all duration-200 active:scale-95"
                             >
                               <Plus size={18} />
                             </button>

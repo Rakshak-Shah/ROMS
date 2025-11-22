@@ -182,39 +182,102 @@ export default function ContactPage() {
                     required
                     value={formData.subject}
                     onChange={handleInputChange}
-                    className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-amber-500/40 transition-all font-medium appearance-none"
-                  >
-                    <option value="" className="bg-[#0a0a0a]">Select inquiry type</option>
-                    <option value="reservation" className="bg-[#0a0a0a]">Luxury Reservation</option>
-                    <option value="event" className="bg-[#0a0a0a]">Private Event (10+)</option>
-                    <option value="catering" className="bg-[#0a0a0a]">Gourmet Catering</option>
-                    <option value="feedback" className="bg-[#0a0a0a]">Guest Feedback</option>
-                    <option value="other" className="bg-[#0a0a0a]">Other Inquiries</option>
-                  </select>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-xs font-black text-gray-500 uppercase tracking-widest pl-1">Your Discourse</label>
-                  <textarea
-                    name="message"
-                    rows={6}
-                    required
-                    value={formData.message}
-                    onChange={handleInputChange}
-                    className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-amber-500/40 transition-all font-medium placeholder:text-gray-700 resize-none"
-                    placeholder="Tell us what you are thinking..."
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-black"
+                    placeholder="Your name"
                   />
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="group w-full bg-white text-black py-5 rounded-3xl font-black text-xl hover:bg-amber-500 hover:text-white transition-all duration-500 shadow-2xl active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50"
+                <div>
+                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
+                    Phone
+                  </label>
+                  <input
+                    type="tel"
+                    id="phone"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-black"
+                    placeholder="+1 (555) 123-4567"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                  Email *
+                </label>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  required
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-black"
+                  placeholder="your.email@example.com"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-2">
+                  Subject *
+                </label>
+                <select
+                  id="subject"
+                  name="subject"
+                  required
+                  value={formData.subject}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-black"
                 >
-                  {isSubmitting ? 'DISPATCHING...' : 'SEND MESSAGE'}
-                  <Send size={22} className="group-hover:translate-x-2 group-hover:-translate-y-2 transition-transform" />
-                </button>
-              </form>
+                  <option value="">Select a subject</option>
+                  <option value="reservation">Reservation Inquiry</option>
+                  <option value="menu">Menu Question</option>
+                  <option value="catering">Catering Services</option>
+                  <option value="event">Private Events</option>
+                  <option value="feedback">Feedback</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+
+              <div>
+                <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-2">
+                  Message *
+                </label>
+                <textarea
+                  id="message"
+                  name="message"
+                  rows={5}
+                  required
+                  value={formData.message}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-black"
+                  placeholder="Tell us how we can help you..."
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full bg-amber-600 text-white py-3 px-6 rounded-lg font-semibold text-lg hover:bg-amber-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+              >
+                <Send size={20} />
+                <span>{isSubmitting ? 'Sending...' : 'Send Message'}</span>
+              </button>
+            </form>
+          </div>
+        </div>
+
+        {/* Map Placeholder */}
+        <div className="mt-16">
+          <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+            <div className="h-96 bg-gray-200 flex items-center justify-center">
+              <div className="text-center">
+                <MapPin size={48} className="text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500">Interactive map would be displayed here</p>
+                <p className="text-sm text-gray-400 mt-2">123 Food Street, City, State 12345</p>
+              </div>
             </div>
           </div>
         </div>

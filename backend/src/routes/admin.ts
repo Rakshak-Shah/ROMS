@@ -27,7 +27,7 @@ import {
   updateReservationStatus
 } from '../controllers/reservationController';
 import {
-  getAllMenuItems,
+  getAllMenuItemsAdmin,
   createMenuItem,
   updateMenuItem,
   deleteMenuItem
@@ -64,7 +64,7 @@ router.post('/reservations/:id/confirm', confirmReservation);
 router.patch('/reservations/:id/status', updateReservationStatus);
 
 // Menu Management
-router.get('/menu', getAllMenuItems);
+router.get('/menu', getAllMenuItemsAdmin);
 router.post('/menu', createMenuItem);
 router.patch('/menu/:id', updateMenuItem);
 router.delete('/menu/:id', deleteMenuItem);

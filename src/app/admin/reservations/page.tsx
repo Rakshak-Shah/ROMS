@@ -13,7 +13,7 @@ export default function AdminReservationsPage() {
   const [filter, setFilter] = useState('all');
 
   useEffect(() => {
-    if (!loading && (!user || (user.role !== 'admin' && user.role !== 'staff'))) {
+    if (!loading && (!user || user.role !== 'admin')) {
       router.push('/login');
       return;
     }

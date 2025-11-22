@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useEffect, useRef } from 'react';
-import { Menu, X, User, ShoppingCart, LogOut, Settings, Utensils } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { Menu, X, User, ShoppingCart, LogOut, Settings } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -14,23 +14,21 @@ export default function Navbar() {
   const { user, isAuthenticated, logout } = useAuth();
   const userMenuRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 20);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+  // Close user menu when clicking outside
+  const handleClickOutside = useCallback((event: MouseEvent) => {
+    if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+      setShowUserMenu(false);
+    }
   }, []);
-
+  
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
-        setShowUserMenu(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    if (showUserMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [showUserMenu, handleClickOutside]);
 
   const navItems = [
     { name: 'Menu', href: '/menu' },

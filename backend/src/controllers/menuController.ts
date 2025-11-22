@@ -6,22 +6,44 @@ import logger from '../utils/logger';
 // Get all menu items (public)
 export const getAllMenuItems = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { category, available = true } = req.query;
+    const { category, available } = req.query as { category?: string; available?: string };
     
     const filter: any = {};
-    if (available === 'false') {
-      filter.isAvailable = false;
-    } else {
-      filter.isAvailable = true; // Default to showing available items
-    }
-
-    if (category) {
-      filter.category = category;
-    }
+    // Public API: default to available=true when not specified
+    if (available === undefined || available === 'true') filter.isAvailable = true;
+    if (available === 'false') filter.isAvailable = false;
+    if (category) filter.category = category;
 
     const menuItems = await MenuItem.find(filter)
       .populate('createdBy', 'name')
       .sort({ category: 1, name: 1 });
+
+    res.status(200).json({
+      status: 'success',
+      results: menuItems.length,
+      data: {
+        menuItems
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Get all menu items (admin/staff) - no availability filter by default
+export const getAllMenuItemsAdmin = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { category, available } = req.query as { category?: string; available?: string };
+    
+    const filter: any = {};
+    if (category) filter.category = category;
+    // Allow explicit availability filter when provided
+    if (available === 'true') filter.isAvailable = true;
+    if (available === 'false') filter.isAvailable = false;
+
+    const menuItems = await MenuItem.find(filter)
+      .populate('createdBy', 'name')
+      .sort({ createdAt: -1 });
 
     res.status(200).json({
       status: 'success',

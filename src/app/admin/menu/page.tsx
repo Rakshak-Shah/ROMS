@@ -122,8 +122,8 @@ export default function AdminMenuPage() {
               <h3 className="font-bold text-lg mb-2 text-primary">{item.name}</h3>
               <p className="text-secondary text-sm mb-3 line-clamp-2">{item.description}</p>
               <div className="flex items-center justify-between mb-4">
-                <span className="text-xl font-bold" style={{color: 'var(--success)'}}>${item.price}</span>
-                <span className={`px-3 py-1 rounded-full text-xs ${
+                <span className="text-xl font-bold" style={{color: 'var(--success)'}}>Rs{item.price}</span>
+                <span className={`px-3 py-1 rounded-full text-xs Rs{
                   item.isAvailable 
                     ? 'bg-[var(--success-bg)] text-[var(--success)]' 
                     : 'bg-[var(--error-bg)] text-[var(--error)]'

@@ -20,8 +20,7 @@ export default function AdminDashboard() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!loading && (!user || (user.role !== 'admin' && user.role !== 'staff'))) {
-      showToast('Unauthorized access to command console.', 'error');
+    if (!loading && (!user || user.role !== 'admin')) {
       router.push('/login');
       return;
     }
@@ -103,13 +102,59 @@ export default function AdminDashboard() {
       <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-amber-500/5 blur-[150px] pointer-events-none -z-10 animate-float"></div>
       <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-blue-500/5 blur-[120px] pointer-events-none -z-10 animate-float" style={{ animationDelay: '3s' }}></div>
 
-      <div className="max-w-7xl mx-auto px-6">
-        {/* HQ Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-6 animate-fade-in-down">
-          <div>
-            <div className="flex items-center gap-3 mb-4 text-amber-500">
-               <Activity size={18} className="animate-pulse" />
-               <span className="text-[10px] font-black uppercase tracking-[0.4em]">Operational Status: Elite</span>
+        {/* Quick Navigation */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+          <button
+            onClick={() => router.push('/admin/menu')}
+            className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition-shadow"
+          >
+            <div className="text-blue-600 text-2xl mb-2">🍽️</div>
+            <h3 className="font-semibold text-gray-900">Menu Management</h3>
+            <p className="text-sm text-gray-600 mt-1">Manage menu items</p>
+          </button>
+
+          <button
+            onClick={() => router.push('/admin/orders')}
+            className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition-shadow"
+          >
+            <div className="text-green-600 text-2xl mb-2">📦</div>
+            <h3 className="font-semibold text-gray-900">Orders</h3>
+            <p className="text-sm text-gray-600 mt-1">View & manage orders</p>
+          </button>
+
+          <button
+            onClick={() => router.push('/admin/reservations')}
+            className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition-shadow"
+          >
+            <div className="text-purple-600 text-2xl mb-2">📅</div>
+            <h3 className="font-semibold text-gray-900">Reservations</h3>
+            <p className="text-sm text-gray-600 mt-1">Manage table bookings</p>
+          </button>
+
+          <button
+            onClick={() => router.push('/admin/inventory')}
+            className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition-shadow"
+          >
+            <div className="text-orange-600 text-2xl mb-2">📊</div>
+            <h3 className="font-semibold text-gray-900">Inventory</h3>
+            <p className="text-sm text-gray-600 mt-1">Track stock levels</p>
+          </button>
+
+        </div>
+
+        {/* Statistics */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="bg-white p-6 rounded-lg shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-600 text-sm">Total Orders</p>
+                <p className="text-3xl font-bold text-gray-900 mt-1">
+                  {dashboardData?.ordersCount || 0}
+                </p>
+              </div>
+              <div className="bg-blue-100 p-3 rounded-full">
+                <span className="text-2xl">📦</span>
+              </div>
             </div>
             <h1 className="text-5xl md:text-7xl font-black text-white tracking-tighter leading-none mb-4">
                Command <span className="text-gradient">Center</span>

@@ -49,11 +49,11 @@ export default function Footer() {
             <div className="space-y-3">
               <div className="flex items-center space-x-3">
                 <MapPin size={18} className="text-amber-500" />
-                <span className="text-gray-300">123 Food Street, City, State 12345</span>
+                <span className="text-gray-300">Bheemdatta 03- Kanchanpur</span>
               </div>
               <div className="flex items-center space-x-3">
                 <Phone size={18} className="text-amber-500" />
-                <span className="text-gray-300">+1 (555) 123-4567</span>
+                <span className="text-gray-300">+977 000000000</span>
               </div>
               <div className="flex items-center space-x-3">
                 <Mail size={18} className="text-amber-500" />

@@ -111,16 +111,179 @@ export default function ReservationsPage() {
               ))}
             </div>
             
-            <div className="mt-20 p-8 glass-panel border border-white/5 rounded-[40px] relative overflow-hidden group">
-               <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity"></div>
-               <div className="flex items-center gap-4 text-gray-500 mb-2">
-                  <MapPin size={16} className="text-amber-500" />
-                  <span className="text-xs font-black uppercase tracking-widest text-sm">Location Policy</span>
-               </div>
-               <p className="text-sm text-gray-400 font-light italic leading-relaxed">
-                 * Tables are held for a maximum of 15 minutes past reservation time. Late arrival may result in waitlisting.
-               </p>
-            </div>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Personal Information */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+                    Full Name *
+                  </label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                    <input
+                      type="text"
+                      id="name"
+                      name="name"
+                      required
+                      value={formData.name}
+                      onChange={handleInputChange}
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-black"
+                      placeholder="Your full name"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
+                    Phone Number *
+                  </label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                    <input
+                      type="tel"
+                      id="phone"
+                      name="phone"
+                      required
+                      value={formData.phone}
+                      onChange={handleInputChange}
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-black"
+                      placeholder="+1 (555) 123-4567"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2 ">
+                  Email Address *
+                </label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                  <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    required
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-black"
+                    placeholder="your.email@example.com"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+  {/* Date Field */}
+  <div>
+    <label
+      htmlFor="date"
+      className="block text-sm md:text-base font-medium text-gray-700 mb-2"
+    >
+      Date *
+    </label>
+    <div className="relative">
+      <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+      <input
+        type="date"
+        id="date"
+        name="date"
+        required
+        min={today}
+        value={formData.date}
+        onChange={handleInputChange}
+        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-black text-sm md:text-base"
+      />
+    </div>
+  </div>
+
+  {/* Time Field */}
+  <div>
+    <label
+      htmlFor="time"
+      className="block text-sm md:text-base font-medium text-gray-700 mb-2"
+    >
+      Time *
+    </label>
+    <div className="relative">
+      <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+      <select
+        id="time"
+        name="time"
+        required
+        value={formData.time}
+        onChange={handleInputChange}
+        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-black text-sm md:text-base appearance-none"
+      >
+        <option value="">Select time</option>
+        {timeSlots.map((slot) => (
+          <option key={slot} value={slot}>
+            {slot}
+          </option>
+        ))}
+      </select>
+      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+        ▾
+      </span>
+    </div>
+  </div>
+
+  {/* Guests Field */}
+  <div>
+    <label
+      htmlFor="guests"
+      className="block text-sm md:text-base font-medium text-gray-700 mb-2"
+    >
+      Guests *
+    </label>
+    <div className="relative">
+      <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+      <select
+        id="guests"
+        name="guests"
+        required
+        value={formData.guests}
+        onChange={handleInputChange}
+        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-black text-sm md:text-base appearance-none"
+      >
+        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
+          <option key={num} value={num}>
+            {num} {num === 1 ? "Guest" : "Guests"}
+          </option>
+        ))}
+      </select>
+      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+        ▾
+      </span>
+    </div>
+  </div>
+</div>
+
+
+              {/* Special Requests */}
+              <div>
+                <label htmlFor="specialRequests" className="block text-sm font-medium text-gray-700 mb-2">
+                  Special Requests (Optional)
+                </label>
+                <textarea
+                  id="specialRequests"
+                  name="specialRequests"
+                  rows={3}
+                  value={formData.specialRequests}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-black"
+                  placeholder="Any dietary restrictions, allergies, or special occasions..."
+                />
+              </div>
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full bg-amber-600 text-white py-4 px-6 rounded-lg font-semibold text-lg hover:bg-amber-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-black"
+              >
+                {isSubmitting ? 'Booking...' : 'Reserve Table'}
+              </button>
+            </form>
           </div>
 
           {/* Reservation Form */}
