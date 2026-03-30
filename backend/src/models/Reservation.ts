@@ -155,8 +155,8 @@ const ReservationSchema = new Schema<IReservation>({
   toJSON: { virtuals: true }
 });
 
-// Generate confirmation code before saving
-ReservationSchema.pre('save', function(next) {
+// Generate confirmation code before validation
+ReservationSchema.pre('validate', function(next) {
   if (this.isNew && !this.confirmationCode) {
     const timestamp = Date.now().toString().slice(-6);
     const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');

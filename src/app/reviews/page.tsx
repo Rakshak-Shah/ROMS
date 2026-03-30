@@ -1,203 +1,193 @@
-import { Star, User, Clock } from 'lucide-react';
+'use client';
 
-const reviews = [
+import { useState } from 'react';
+import { Star, MessageSquare, User, Quote, ArrowRight, ShieldCheck, Sparkles } from 'lucide-react';
+import { useToast } from '@/components/Toast';
+
+const testimonials = [
   {
     id: 1,
-    name: 'Sarah Johnson',
+    name: 'Eleanor Vautier',
+    date: 'March 24, 2024',
     rating: 5,
-    date: '2024-01-15',
-    comment: 'Absolutely amazing experience! The food was outstanding, especially the lobster thermidor. The service was impeccable and the atmosphere was perfect for our anniversary dinner. Will definitely be coming back!',
-    dish: 'Lobster Thermidor'
+    comment: 'The tasting menu was a journey of flavors I haven\'t experienced elsewhere. Truly Michelin-level service and molecular gastronomy at its peak.',
+    role: 'Epicurean Critic',
+    avatar: 'EV'
   },
   {
     id: 2,
-    name: 'Michael Chen',
+    name: 'Julian Sterling',
+    date: 'March 18, 2024',
     rating: 5,
-    date: '2024-01-12',
-    comment: 'Best Italian food in the city! The spaghetti carbonara was authentic and delicious. The staff was knowledgeable about the menu and wine pairings. Highly recommended for anyone who appreciates fine dining.',
-    dish: 'Spaghetti Carbonara'
+    comment: 'Exceptional atmosphere. The glassmorphic design of the restaurant itself is mirrored in the impeccable presentation of the Octopus Carpaccio.',
+    role: 'Interior Designer',
+    avatar: 'JS'
   },
   {
     id: 3,
-    name: 'Emily Rodriguez',
+    name: 'Marcus Chen',
+    date: 'March 12, 2024',
     rating: 4,
-    date: '2024-01-10',
-    comment: 'Great food and lovely ambiance. The ribeye steak was cooked to perfection. Only minor complaint is that it took a bit long to get seated, but the quality of food made up for it. The dessert was heavenly!',
-    dish: 'Ribeye Steak'
+    comment: 'A masterclass in modern dining. Every detail, from the ambient lighting to the custom-made ceramics, speaks of profound luxury.',
+    role: 'Gastronomy Enthusiast',
+    avatar: 'MC'
   },
   {
     id: 4,
-    name: 'David Thompson',
+    name: 'Sophia Rossi',
+    date: 'March 5, 2024',
     rating: 5,
-    date: '2024-01-08',
-    comment: 'Exceptional dining experience from start to finish. The QR code ordering system was convenient and the food arrived quickly. The grilled salmon was fresh and flavorful. Perfect for business dinners.',
-    dish: 'Grilled Salmon'
-  },
-  {
-    id: 5,
-    name: 'Lisa Williams',
-    rating: 5,
-    date: '2024-01-05',
-    comment: 'The chef\'s tasting menu was an incredible journey of flavors. Each course was beautifully presented and delicious. The wine selection was excellent. This is a must-visit restaurant for special occasions.',
-    dish: 'Chef\'s Tasting Menu'
-  },
-  {
-    id: 6,
-    name: 'Robert Martinez',
-    rating: 4,
-    date: '2024-01-03',
-    comment: 'Solid choice for a family dinner. The kids loved the chicken parmesan and we enjoyed the extensive wine list. The service was friendly and accommodating. Good value for money considering the quality.',
-    dish: 'Chicken Parmesan'
-  },
-  {
-    id: 7,
-    name: 'Jennifer Davis',
-    rating: 5,
-    date: '2024-01-01',
-    comment: 'Started the new year right with an amazing meal here! The tiramisu was the best I\'ve ever had. The atmosphere was cozy and romantic. Thank you for making our New Year\'s Eve special!',
-    dish: 'Tiramisu'
-  },
-  {
-    id: 8,
-    name: 'Kevin Brown',
-    rating: 4,
-    date: '2023-12-28',
-    comment: 'Great restaurant with excellent food quality. The antipasto platter was generous and tasty. The reservation system worked smoothly. Will be back to try more dishes from their extensive menu.',
-    dish: 'Antipasto Platter'
+    comment: 'I celebrated my anniversary here and was treated like royalty. The Chef\'s personalized touch on our dessert was unforgettable.',
+    role: 'Lifestyle Blogger',
+    avatar: 'SR'
   }
 ];
 
-const overallStats = {
-  averageRating: 4.8,
-  totalReviews: 247,
-  ratingDistribution: {
-    5: 78,
-    4: 18,
-    3: 3,
-    2: 1,
-    1: 0
-  }
-};
-
-function StarRating({ rating, className = "" }: { rating: number; className?: string }) {
-  return (
-    <div className={`flex ${className}`}>
-      {[1, 2, 3, 4, 5].map((star) => (
-        <Star
-          key={star}
-          size={16}
-          className={star <= rating ? 'text-yellow-400 fill-current' : 'text-gray-300'}
-        />
-      ))}
-    </div>
-  );
-}
-
 export default function ReviewsPage() {
+  const { showToast } = useToast();
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!comment.trim()) {
+      showToast('Please share your experience', 'error');
+      return;
+    }
+    
+    setIsSubmitting(true);
+    setTimeout(() => {
+      showToast('Your perspective has been recorded. Review pending curation.', 'success');
+      setComment('');
+      setIsSubmitting(false);
+    }, 1500);
+  };
+
   return (
-    <div className="bg-gray-50 min-h-screen">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-amber-600 to-orange-600 text-white py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">Customer Reviews</h1>
-          <p className="text-xl md:text-2xl max-w-3xl mx-auto">
-            See what our customers are saying about their dining experiences
+    <div className="min-h-screen bg-[#0a0a0a] pt-28 pb-20 relative overflow-hidden">
+      {/* Background Ambience */}
+      <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-amber-500/5 blur-[120px] pointer-events-none -z-10 animate-float"></div>
+      <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-indigo-500/5 blur-[120px] pointer-events-none -z-10 animate-float" style={{ animationDelay: '2s' }}></div>
+
+      <div className="max-w-7xl mx-auto px-6">
+        {/* Header */}
+        <div className="text-center mb-24 animate-fade-in-down">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass-panel border border-amber-500/20 mb-6">
+            <ShieldCheck size={14} className="text-amber-500" />
+            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-amber-500">Verified Testimonials</span>
+          </div>
+          <h1 className="text-6xl md:text-8xl font-black text-white mb-8 tracking-tighter leading-tight">
+            Guest <span className="text-gradient">Perspectives</span>
+          </h1>
+          <p className="text-xl text-gray-400 font-light max-w-3xl mx-auto leading-relaxed">
+            The honest reflections of our global patrons. Discover why Delicious is consistently ranked as a premier gastronomic destination.
           </p>
         </div>
-      </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        {/* Overall Rating Stats */}
-        <div className="bg-white rounded-lg shadow-sm p-8 mb-12">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Average Rating */}
-            <div className="text-center">
-              <div className="text-5xl font-bold text-amber-600 mb-2">{overallStats.averageRating}</div>
-              <StarRating rating={Math.round(overallStats.averageRating)} className="justify-center mb-2" />
-              <p className="text-gray-600">Based on {overallStats.totalReviews} reviews</p>
-            </div>
-
-            {/* Rating Distribution */}
-            <div className="md:col-span-2">
-              <h3 className="text-lg font-semibold mb-4">Rating Distribution</h3>
-              <div className="space-y-2">
-                {[5, 4, 3, 2, 1].map((rating) => {
-                  const count = overallStats.ratingDistribution[rating as keyof typeof overallStats.ratingDistribution];
-                  const percentage = (count / 100) * 100;
-                  return (
-                    <div key={rating} className="flex items-center space-x-3">
-                      <div className="flex items-center space-x-1 w-12">
-                        <span className="text-sm">{rating}</span>
-                        <Star size={14} className="text-yellow-400 fill-current" />
-                      </div>
-                      <div className="flex-1 bg-gray-200 rounded-full h-2">
-                        <div 
-                          className="bg-amber-500 h-2 rounded-full" 
-                          style={{ width: `${percentage}%` }}
-                        />
-                      </div>
-                      <span className="text-sm text-gray-600 w-10">{count}%</span>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+          {/* Testimonials List */}
+          <div className="lg:col-span-2 space-y-8 animate-fade-in-up stagger-1">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {testimonials.map((t, index) => (
+                <div 
+                  key={t.id} 
+                  className="glass-card p-10 rounded-[40px] border border-white/5 hover:border-amber-500/20 transition-all duration-500 relative group overflow-hidden"
+                  style={{ animationDelay: `${index * 0.1}s` }}
+                >
+                  <Quote className="absolute -top-4 -right-4 w-24 h-24 text-white/5 group-hover:text-amber-500/10 transition-colors" />
+                  
+                  <div className="flex items-center gap-4 mb-8">
+                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white font-black text-lg shadow-[0_0_20px_rgba(245,158,11,0.3)]">
+                      {t.avatar}
                     </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Individual Reviews */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {reviews.map((review) => (
-            <div key={review.id} className="bg-white rounded-lg shadow-sm p-6">
-              <div className="flex items-start space-x-4">
-                <div className="bg-amber-100 rounded-full p-2 flex-shrink-0">
-                  <User size={24} className="text-amber-600" />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-semibold text-gray-900">{review.name}</h3>
-                    <div className="flex items-center space-x-2 text-sm text-gray-500">
-                      <Clock size={14} />
-                      <span>{new Date(review.date).toLocaleDateString()}</span>
+                    <div>
+                      <h3 className="text-white font-black tracking-tight">{t.name}</h3>
+                      <p className="text-xs text-amber-500/80 font-bold uppercase tracking-widest leading-none">{t.role}</p>
                     </div>
                   </div>
                   
-                  <div className="flex items-center space-x-2 mb-3">
-                    <StarRating rating={review.rating} />
-                    <span className="text-sm text-gray-600">({review.rating}/5)</span>
+                  <div className="flex gap-1 mb-6">
+                    {[...Array(5)].map((_, i) => (
+                      <Star 
+                        key={i} 
+                        size={14} 
+                        className={i < t.rating ? 'fill-amber-500 text-amber-500' : 'text-white/10'} 
+                      />
+                    ))}
                   </div>
                   
-                  <p className="text-gray-600 mb-3">{review.comment}</p>
+                  <p className="text-gray-400 text-sm leading-relaxed font-light italic">
+                    &quot;{t.comment}&quot;
+                  </p>
                   
-                  <div className="inline-block bg-amber-50 text-amber-800 text-sm px-3 py-1 rounded-full">
-                    Tried: {review.dish}
+                  <div className="mt-8 pt-6 border-t border-white/5 text-[10px] text-gray-600 font-black uppercase tracking-[0.2em]">
+                    {t.date}
                   </div>
                 </div>
-              </div>
+              ))}
             </div>
-          ))}
-        </div>
-
-        {/* Call to Action */}
-        <div className="bg-white rounded-lg shadow-sm p-8 mt-12 text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Had a Great Experience?</h2>
-          <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
-            We&apos;d love to hear about your visit! Your feedback helps us improve and lets other food lovers know what to expect.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a
-              href="#"
-              className="bg-amber-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-amber-700 transition-colors inline-block"
-            >
-              Leave a Review
-            </a>
-            <a
-              href="/reservations"
-              className="border border-amber-600 text-amber-600 px-8 py-3 rounded-lg font-medium hover:bg-amber-50 transition-colors inline-block"
-            >
-              Make a Reservation
-            </a>
           </div>
+
+          {/* Leave a Review Form */}
+          <aside className="animate-fade-in-up stagger-2">
+            <div className="glass-panel p-10 rounded-[50px] border border-white/10 sticky top-28 shadow-2xl overflow-hidden">
+               <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 blur-3xl pointer-events-none"></div>
+               
+               <div className="flex items-center gap-3 mb-10">
+                <MessageSquare className="text-amber-500" size={24} />
+                <h2 className="text-2xl font-black text-white tracking-tight uppercase">Your Verdict</h2>
+               </div>
+               
+               <form onSubmit={handleSubmit} className="space-y-10">
+                 <div className="space-y-4 text-center">
+                    <p className="text-xs text-gray-500 font-black uppercase tracking-widest pl-1">Rating</p>
+                    <div className="flex justify-center gap-3">
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <button
+                          key={s}
+                          type="button"
+                          onClick={() => setRating(s)}
+                          className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${
+                            rating >= s ? 'bg-amber-500 text-white shadow-glow' : 'bg-white/5 text-gray-600 hover:text-gray-400'
+                          }`}
+                        >
+                          <Star size={20} className={rating >= s ? 'fill-white' : ''} />
+                        </button>
+                      ))}
+                    </div>
+                 </div>
+
+                 <div className="space-y-3">
+                   <label className="text-xs text-gray-500 font-black uppercase tracking-widest pl-1">Experience Description</label>
+                   <textarea
+                    rows={6}
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
+                    placeholder="Describe your gastronomic journey..."
+                    className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-[24px] text-white focus:outline-none focus:ring-2 focus:ring-amber-500/40 transition-all font-medium placeholder:text-gray-700 resize-none"
+                   />
+                 </div>
+
+                 <button
+                   type="submit"
+                   disabled={isSubmitting}
+                   className="group w-full bg-white text-black py-5 rounded-[24px] font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-amber-500 hover:text-white transition-all duration-500 shadow-xl active:scale-95"
+                 >
+                   {isSubmitting ? 'Recording...' : 'Publish Review'}
+                   <ArrowRight size={16} className="opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                 </button>
+               </form>
+            </div>
+
+            <div className="mt-8 glass-panel p-8 rounded-[32px] border border-white/5 text-center group">
+              <Sparkles className="text-amber-500 mx-auto mb-4 group-hover:animate-spin transition-all" size={24} />
+              <h4 className="text-white font-bold mb-2">Member Rewards</h4>
+              <p className="text-xs text-gray-500 font-light leading-relaxed">
+                Elite members earn <span className="text-amber-500 font-black">Luxury Points</span> for every verified review published.
+              </p>
+            </div>
+          </aside>
         </div>
       </div>
     </div>

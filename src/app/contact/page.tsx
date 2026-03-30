@@ -1,9 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { MapPin, Phone, Mail, Clock, Send } from 'lucide-react';
+import { MapPin, Phone, Mail, Clock, Send, MessageSquare, Globe, ArrowRight } from 'lucide-react';
+import { useToast } from '@/components/Toast';
 
 export default function ContactPage() {
+  const { showToast } = useToast();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -21,21 +23,16 @@ export default function ContactPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Basic validation
     if (!formData.name.trim()) {
-      alert('Please enter your name');
+      showToast('Please enter your name', 'error');
       return;
     }
     if (!formData.email.trim()) {
-      alert('Please enter your email address');
+      showToast('Please enter your email', 'error');
       return;
     }
     if (!formData.subject) {
-      alert('Please select a subject');
-      return;
-    }
-    if (!formData.message.trim()) {
-      alert('Please enter your message');
+      showToast('Please select a subject', 'error');
       return;
     }
 
@@ -43,7 +40,7 @@ export default function ContactPage() {
 
     // Simulate API call
     setTimeout(() => {
-      alert('Thank you for your message! We\'ll get back to you within 24 hours.');
+      showToast('Message sent! We\'ll get back to you within 24 hours.', 'success');
       setFormData({
         name: '',
         email: '',
@@ -52,208 +49,172 @@ export default function ContactPage() {
         message: ''
       });
       setIsSubmitting(false);
-    }, 2000);
+    }, 1500);
   };
 
   return (
-    <div className="bg-gray-50 min-h-screen">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-amber-600 to-orange-600 text-white py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">Contact Us</h1>
-          <p className="text-xl md:text-2xl max-w-3xl mx-auto">
-            We&apos;d love to hear from you. Send us a message and we&apos;ll respond as soon as possible.
+    <div className="min-h-screen bg-[#0a0a0a] pt-28 pb-20 relative overflow-hidden">
+      {/* Premium Background Elements */}
+      <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-amber-500/5 blur-[120px] pointer-events-none -z-10 animate-float"></div>
+      <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-blue-500/5 blur-[120px] pointer-events-none -z-10 animate-float" style={{ animationDelay: '3s' }}></div>
+
+      <div className="max-w-7xl mx-auto px-6">
+        {/* Luxury Header */}
+        <div className="text-left mb-20 animate-fade-in-down">
+          <div className="flex items-center gap-3 mb-6 text-amber-500">
+            <div className="h-px w-12 bg-amber-500"></div>
+            <span className="text-xs font-black uppercase tracking-[0.4em]">Get in Touch</span>
+          </div>
+          <h1 className="text-6xl md:text-7xl font-black text-white mb-6 tracking-tight leading-none">
+            Let&apos;s <span className="text-gradient">Connect</span>
+          </h1>
+          <p className="text-xl text-gray-400 font-light max-w-2xl leading-relaxed">
+            Whether it&apos;s a reservation inquiry or a private event, our concierge team is standing by to assist you.
           </p>
         </div>
-      </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-          {/* Contact Information */}
-          <div className="space-y-8">
-            <div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-6">Get in Touch</h2>
-              <p className="text-lg text-gray-600 mb-8">
-                Whether you have questions about our menu, want to make a reservation, or need catering services, 
-                we&apos;re here to help. Reach out to us through any of the following methods.
-              </p>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
+          {/* Contact Information Cards */}
+          <div className="space-y-6 animate-fade-in-up stagger-1">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="glass-card p-8 group hover:-translate-y-2 border border-white/5 shadow-2xl transition-all duration-500">
+                <div className="w-14 h-14 rounded-2xl bg-amber-500/10 flex items-center justify-center mb-6 border border-amber-500/20 group-hover:bg-amber-500/20 transition-all">
+                  <MapPin className="text-amber-500" size={24} />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-3">Presence</h3>
+                <p className="text-gray-400 text-sm leading-relaxed">
+                  123 Luxury Food Street<br />
+                  Culinary Center, NY 10001
+                </p>
+              </div>
+
+              <div className="glass-card p-8 group hover:-translate-y-2 border border-white/5 shadow-2xl transition-all duration-500">
+                <div className="w-14 h-14 rounded-2xl bg-blue-500/10 flex items-center justify-center mb-6 border border-blue-500/20 group-hover:bg-blue-500/20 transition-all">
+                  <Phone className="text-blue-400" size={24} />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-3">Inquiries</h3>
+                <p className="text-gray-400 text-sm leading-relaxed">
+                  Direct: +1 (555) 123-4567<br />
+                  Concierge: Ext. 504
+                </p>
+              </div>
+
+              <div className="glass-card p-8 group hover:-translate-y-2 border border-white/5 shadow-2xl transition-all duration-500">
+                <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center mb-6 border border-emerald-500/20 group-hover:bg-emerald-500/20 transition-all">
+                  <Mail className="text-emerald-400" size={24} />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-3">Electronic</h3>
+                <p className="text-gray-400 text-sm leading-relaxed">
+                  info@delicious.com<br />
+                  reservations@delicious.com
+                </p>
+              </div>
+
+              <div className="glass-card p-8 group hover:-translate-y-2 border border-white/5 shadow-2xl transition-all duration-500">
+                <div className="w-14 h-14 rounded-2xl bg-purple-500/10 flex items-center justify-center mb-6 border border-purple-500/20 group-hover:bg-purple-500/20 transition-all">
+                  <Clock className="text-purple-400" size={24} />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-3">Schedule</h3>
+                <p className="text-gray-400 text-sm leading-relaxed">
+                  Daily: 11 AM - 11 PM<br />
+                  Weekends: Until Midnight
+                </p>
+              </div>
             </div>
 
-            {/* Contact Details */}
-            <div className="space-y-6">
-              <div className="bg-white rounded-lg shadow-sm p-6">
-                <div className="flex items-start space-x-4">
-                  <div className="bg-amber-100 p-3 rounded-full">
-                    <MapPin className="h-6 w-6 text-amber-600" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Address</h3>
-                    <p className="text-gray-600">
-                      123 Food Street<br />
-                      Culinary District<br />
-                      City, State 12345
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-lg shadow-sm p-6">
-                <div className="flex items-start space-x-4">
-                  <div className="bg-amber-100 p-3 rounded-full">
-                    <Phone className="h-6 w-6 text-amber-600" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Phone</h3>
-                    <p className="text-gray-600">+1 (555) 123-4567</p>
-                    <p className="text-sm text-gray-500">Available during business hours</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-lg shadow-sm p-6">
-                <div className="flex items-start space-x-4">
-                  <div className="bg-amber-100 p-3 rounded-full">
-                    <Mail className="h-6 w-6 text-amber-600" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Email</h3>
-                    <p className="text-gray-600">info@deliciousrestaurant.com</p>
-                    <p className="text-gray-600">reservations@deliciousrestaurant.com</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-lg shadow-sm p-6">
-                <div className="flex items-start space-x-4">
-                  <div className="bg-amber-100 p-3 rounded-full">
-                    <Clock className="h-6 w-6 text-amber-600" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Hours</h3>
-                    <div className="text-gray-600 space-y-1">
-                      <p>Monday - Thursday: 11:00 AM - 10:00 PM</p>
-                      <p>Friday - Saturday: 11:00 AM - 11:00 PM</p>
-                      <p>Sunday: 12:00 PM - 9:00 PM</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
+            <div className="glass-panel p-10 rounded-[40px] border border-white/5 shadow-2xl mt-10 relative overflow-hidden">
+               <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 blur-3xl pointer-events-none"></div>
+               <div className="flex items-center gap-4 mb-6">
+                <Globe className="text-amber-500" size={20} />
+                <h4 className="text-lg font-bold text-white uppercase tracking-widest text-sm">Online Reservation</h4>
+               </div>
+               <p className="text-gray-400 mb-8 text-sm leading-relaxed">
+                Prefer to book instantly? Use our secure reservation portal for immediate confirmation.
+               </p>
+               <button className="flex items-center gap-2 text-amber-500 font-black text-sm uppercase tracking-widest hover:text-white transition-colors group">
+                 Open Portal <ArrowRight size={16} className="group-hover:translate-x-2 transition-transform" />
+               </button>
             </div>
           </div>
 
-          {/* Contact Form */}
-          <div className="bg-white rounded-lg shadow-sm p-8">
-            <h2 className="text-2xl font-semibold text-gray-900 mb-6">Send us a Message</h2>
-            
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                    Name *
-                  </label>
-                  <input
-                    type="text"
-                    id="name"
-                    name="name"
+          {/* Contact Form Overlay */}
+          <div className="animate-fade-in-up stagger-2">
+            <div className="glass-panel p-12 rounded-[50px] border border-white/10 shadow-[0_0_80px_rgba(0,0,0,0.4)] relative overflow-hidden">
+              <div className="absolute -top-20 -right-20 w-64 h-64 bg-amber-500/10 blur-[100px] pointer-events-none -z-10"></div>
+              
+              <div className="flex items-center gap-3 mb-10">
+                <MessageSquare className="text-amber-500" size={24} />
+                <h2 className="text-3xl font-black text-white tracking-tight">Express Messenger</h2>
+              </div>
+              
+              <form onSubmit={handleSubmit} className="space-y-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-2">
+                    <label className="text-xs font-black text-gray-500 uppercase tracking-widest pl-1">Full Name</label>
+                    <input
+                      type="text"
+                      name="name"
+                      required
+                      value={formData.name}
+                      onChange={handleInputChange}
+                      className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-amber-500/40 transition-all font-medium placeholder:text-gray-700"
+                      placeholder="E.g. Jonathan Ive"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-black text-gray-500 uppercase tracking-widest pl-1">Electronic Mail</label>
+                    <input
+                      type="email"
+                      name="email"
+                      required
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-amber-500/40 transition-all font-medium placeholder:text-gray-700"
+                      placeholder="e.g. john@apple.com"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-gray-500 uppercase tracking-widest pl-1">Subject of Inquiry</label>
+                  <select
+                    name="subject"
                     required
-                    value={formData.name}
+                    value={formData.subject}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
-                    placeholder="Your name"
+                    className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-amber-500/40 transition-all font-medium appearance-none"
+                  >
+                    <option value="" className="bg-[#0a0a0a]">Select inquiry type</option>
+                    <option value="reservation" className="bg-[#0a0a0a]">Luxury Reservation</option>
+                    <option value="event" className="bg-[#0a0a0a]">Private Event (10+)</option>
+                    <option value="catering" className="bg-[#0a0a0a]">Gourmet Catering</option>
+                    <option value="feedback" className="bg-[#0a0a0a]">Guest Feedback</option>
+                    <option value="other" className="bg-[#0a0a0a]">Other Inquiries</option>
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-gray-500 uppercase tracking-widest pl-1">Your Discourse</label>
+                  <textarea
+                    name="message"
+                    rows={6}
+                    required
+                    value={formData.message}
+                    onChange={handleInputChange}
+                    className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-amber-500/40 transition-all font-medium placeholder:text-gray-700 resize-none"
+                    placeholder="Tell us what you are thinking..."
                   />
                 </div>
 
-                <div>
-                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
-                    Phone
-                  </label>
-                  <input
-                    type="tel"
-                    id="phone"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
-                    placeholder="+1 (555) 123-4567"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                  Email *
-                </label>
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  required
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
-                  placeholder="your.email@example.com"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-2">
-                  Subject *
-                </label>
-                <select
-                  id="subject"
-                  name="subject"
-                  required
-                  value={formData.subject}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="group w-full bg-white text-black py-5 rounded-3xl font-black text-xl hover:bg-amber-500 hover:text-white transition-all duration-500 shadow-2xl active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50"
                 >
-                  <option value="">Select a subject</option>
-                  <option value="reservation">Reservation Inquiry</option>
-                  <option value="menu">Menu Question</option>
-                  <option value="catering">Catering Services</option>
-                  <option value="event">Private Events</option>
-                  <option value="feedback">Feedback</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
-
-              <div>
-                <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-2">
-                  Message *
-                </label>
-                <textarea
-                  id="message"
-                  name="message"
-                  rows={5}
-                  required
-                  value={formData.message}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
-                  placeholder="Tell us how we can help you..."
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full bg-amber-600 text-white py-3 px-6 rounded-lg font-semibold text-lg hover:bg-amber-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-              >
-                <Send size={20} />
-                <span>{isSubmitting ? 'Sending...' : 'Send Message'}</span>
-              </button>
-            </form>
-          </div>
-        </div>
-
-        {/* Map Placeholder */}
-        <div className="mt-16">
-          <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-            <div className="h-96 bg-gray-200 flex items-center justify-center">
-              <div className="text-center">
-                <MapPin size={48} className="text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500">Interactive map would be displayed here</p>
-                <p className="text-sm text-gray-400 mt-2">123 Food Street, City, State 12345</p>
-              </div>
+                  {isSubmitting ? 'DISPATCHING...' : 'SEND MESSAGE'}
+                  <Send size={22} className="group-hover:translate-x-2 group-hover:-translate-y-2 transition-transform" />
+                </button>
+              </form>
             </div>
           </div>
         </div>

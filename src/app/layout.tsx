@@ -21,6 +21,8 @@ export const metadata: Metadata = {
   description: "Experience the finest dining with our carefully crafted dishes using fresh, local ingredients. Order online or reserve your table today.",
 };
 
+import { ToastProvider } from "../components/Toast";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -34,15 +36,17 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-page text-primary transition-colors duration-200`}
       >
-        <AuthProvider>
-          <CartProvider>
-            <NavbarWrapper />
-            <main className="min-h-screen">
-              {children}
-            </main>
-            <Footer />
-          </CartProvider>
-        </AuthProvider>
+        <ToastProvider>
+          <AuthProvider>
+            <CartProvider>
+              <NavbarWrapper />
+              <main className="min-h-screen">
+                {children}
+              </main>
+              <Footer />
+            </CartProvider>
+          </AuthProvider>
+        </ToastProvider>
       </body>
     </html>
   );

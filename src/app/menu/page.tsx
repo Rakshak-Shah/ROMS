@@ -3,151 +3,10 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Plus, Minus, ShoppingCart } from 'lucide-react';
+import { Plus, Minus, ShoppingCart, Info, Filter, ArrowRight } from 'lucide-react';
 import { useCart, MenuItem } from '../../contexts/CartContext';
 import FoodImage from '../../components/FoodImage';
 import { menuService, ApiMenuItem } from '../../lib/api';
-
-// Fallback sample menu data
-const fallbackMenuData: MenuItem[] = [
-  // Appetizers
-  {
-    id: '1',
-    name: 'Bruschetta al Pomodoro',
-    price: 12.99,
-    category: 'appetizers',
-    description: 'Toasted bread topped with fresh tomatoes, basil, garlic, and extra virgin olive oil',
-    image: '/placeholder-food.jpg'
-  },
-  {
-    id: '2',
-    name: 'Calamari Fritti',
-    price: 15.99,
-    category: 'appetizers',
-    description: 'Crispy fried squid rings served with marinara sauce and lemon',
-    image: '/placeholder-food.jpg'
-  },
-  {
-    id: '3',
-    name: 'Antipasto Platter',
-    price: 18.99,
-    category: 'appetizers',
-    description: 'Selection of cured meats, cheeses, olives, and marinated vegetables',
-    image: '/placeholder-food.jpg'
-  },
-
-  // Main Courses
-  {
-    id: '4',
-    name: 'Grilled Salmon',
-    price: 28.99,
-    category: 'mains',
-    description: 'Fresh Atlantic salmon grilled to perfection with lemon herb butter',
-    image: '/placeholder-food.jpg'
-  },
-  {
-    id: '5',
-    name: 'Ribeye Steak',
-    price: 35.99,
-    category: 'mains',
-    description: '12oz prime ribeye steak grilled to your liking with garlic mashed potatoes',
-    image: '/placeholder-food.jpg'
-  },
-  {
-    id: '6',
-    name: 'Lobster Thermidor',
-    price: 42.99,
-    category: 'mains',
-    description: 'Fresh lobster in a rich, creamy sauce with cheese and herbs',
-    image: '/placeholder-food.jpg'
-  },
-  {
-    id: '7',
-    name: 'Chicken Parmesan',
-    price: 24.99,
-    category: 'mains',
-    description: 'Breaded chicken breast topped with marinara sauce and mozzarella',
-    image: '/placeholder-food.jpg'
-  },
-
-  // Pasta
-  {
-    id: '8',
-    name: 'Spaghetti Carbonara',
-    price: 19.99,
-    category: 'pasta',
-    description: 'Classic Italian pasta with eggs, cheese, pancetta, and black pepper',
-    image: '/placeholder-food.jpg'
-  },
-  {
-    id: '9',
-    name: 'Fettuccine Alfredo',
-    price: 17.99,
-    category: 'pasta',
-    description: 'Fresh fettuccine pasta in a rich, creamy parmesan sauce',
-    image: '/placeholder-food.jpg'
-  },
-  {
-    id: '10',
-    name: 'Penne Arrabbiata',
-    price: 16.99,
-    category: 'pasta',
-    description: 'Penne pasta in a spicy tomato sauce with garlic and chili',
-    image: '/placeholder-food.jpg'
-  },
-
-  // Desserts
-  {
-    id: '11',
-    name: 'Tiramisu',
-    price: 9.99,
-    category: 'desserts',
-    description: 'Classic Italian dessert with coffee-soaked ladyfingers and mascarpone',
-    image: '/placeholder-food.jpg'
-  },
-  {
-    id: '12',
-    name: 'Chocolate Lava Cake',
-    price: 8.99,
-    category: 'desserts',
-    description: 'Warm chocolate cake with a molten chocolate center, served with vanilla ice cream',
-    image: '/placeholder-food.jpg'
-  },
-  {
-    id: '13',
-    name: 'Panna Cotta',
-    price: 7.99,
-    category: 'desserts',
-    description: 'Silky smooth vanilla custard topped with berry compote',
-    image: '/placeholder-food.jpg'
-  },
-
-  // Beverages
-  {
-    id: '14',
-    name: 'House Wine (Glass)',
-    price: 8.99,
-    category: 'beverages',
-    description: 'Red or white wine from our carefully selected house collection',
-    image: '/placeholder-food.jpg'
-  },
-  {
-    id: '15',
-    name: 'Craft Beer',
-    price: 6.99,
-    category: 'beverages',
-    description: 'Selection of local craft beers on tap',
-    image: '/placeholder-food.jpg'
-  },
-  {
-    id: '16',
-    name: 'Fresh Juice',
-    price: 4.99,
-    category: 'beverages',
-    description: 'Freshly squeezed orange, apple, or grapefruit juice',
-    image: '/placeholder-food.jpg'
-  }
-];
 
 const categories = [
   { id: 'appetizers', name: 'Appetizers' },
@@ -168,7 +27,6 @@ function MenuContent() {
   const tableNumber = searchParams.get('table');
   const serviceType = searchParams.get('service');
 
-  // Fetch menu items from API
   useEffect(() => {
     const fetchMenuItems = async () => {
       try {
@@ -176,27 +34,23 @@ function MenuContent() {
         setError(null);
         const items = await menuService.getAll();
         
-        // Transform API items to match MenuItem interface
-        const transformedItems: MenuItem[] = items.map((item: ApiMenuItem) => ({
-          id: item._id,
-          name: item.name,
-          price: item.isSpecial && item.specialPrice ? item.specialPrice : item.price,
-          category: item.category,
-          description: item.description || '',
-          image: item.image || '/placeholder-food.jpg'
-        }));
-        
-        if (transformedItems.length > 0) {
+        if (Array.isArray(items)) {
+          const transformedItems: MenuItem[] = items.map((item: ApiMenuItem) => ({
+            id: item._id,
+            name: item.name,
+            price: item.isSpecial && item.specialPrice ? item.specialPrice : item.price,
+            category: item.category,
+            description: item.description || '',
+            image: item.image || '/placeholder-food.jpg'
+          }));
           setMenuData(transformedItems);
         } else {
-          // Use fallback data if API returns empty
-          setMenuData(fallbackMenuData);
-          setError('Using sample menu data - backend may not be running');
+          console.error('Menu data is not an array:', items);
+          setError('Invalid menu data format received.');
         }
       } catch (err) {
         console.error('Error fetching menu:', err);
-        setError('Failed to load menu from backend. Using sample data.');
-        setMenuData(fallbackMenuData);
+        setError('Failed to connect to backend. Please ensure the server is running.');
       } finally {
         setIsLoading(false);
       }
@@ -205,181 +59,181 @@ function MenuContent() {
     fetchMenuItems();
   }, []);
 
-  // Set table and service type from URL params
   useEffect(() => {
-    if (tableNumber !== undefined && tableNumber !== null) {
-      setTable(tableNumber);
-    }
-    if (serviceType !== undefined && serviceType !== null) {
-      setServiceType(serviceType);
-    }
+    if (tableNumber) setTable(tableNumber);
+    if (serviceType) setServiceType(serviceType);
   }, [tableNumber, serviceType, setTable, setServiceType]);
 
   const filteredItems = menuData.filter(item => item.category === selectedCategory);
+  const getItemQuantity = (itemId: string) => state.items.find(item => item.id === itemId)?.quantity || 0;
 
-
-// CART HANDLER - Direct add to cart (address will be asked at checkout)
-const handleAddToCart = (item: MenuItem) => {
-  addToCart(item);
-};
-
-const getItemQuantity = (itemId: string) => {
-  const cartItem = state.items.find(item => item.id === itemId);
-  return cartItem?.quantity || 0;
-};
-
-
-  // Show loading state
   if (isLoading) {
     return (
-      <div className="bg-gray-50 min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-amber-600 mx-auto mb-4"></div>
-          <p className="text-xl text-gray-600">Loading delicious menu items...</p>
+      <div className="min-h-screen pt-24 pb-12 bg-[#0a0a0a]">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="h-20 w-1/3 bg-white/5 rounded-3xl mb-16 animate-pulse"></div>
+          <div className="flex flex-col lg:flex-row gap-10">
+            <div className="lg:w-1/4 h-[400px] bg-white/5 rounded-[40px] animate-pulse"></div>
+            <div className="lg:w-3/4 grid grid-cols-1 md:grid-cols-2 gap-8">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="h-[450px] bg-white/5 rounded-[40px] border border-white/5 animate-pulse"></div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-gray-50 min-h-screen">
-      {/* Header */}
-      <div className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="text-center">
-            {error && (
-              <div className="mb-4 bg-yellow-100 border border-yellow-400 rounded-lg p-3 inline-block">
-                <p className="text-yellow-800 text-sm">⚠️ {error}</p>
-              </div>
-            )}
+    <div className="min-h-screen relative pt-24 pb-12">
+      <div className="absolute top-0 right-0 w-full h-[30vh] bg-amber-500/5 blur-[120px] pointer-events-none"></div>
+
+      <div className="max-w-7xl mx-auto px-6 lg:px-8">
+        <div className="flex flex-col md:flex-row justify-between items-center mb-16 gap-6">
+          <div className="text-left animate-fade-in-down">
+            <h1 className="text-5xl font-extrabold text-white mb-4 tracking-tight">Our <span className="text-gradient">Culinary</span> Selection</h1>
+            <p className="text-gray-400 text-lg max-w-xl font-light">
+              Discover dishes crafted with passion and precision by our expert chefs.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-4 items-center justify-center animate-fade-in-up">
             {tableNumber && (
-              <div className="mb-4 bg-amber-100 rounded-lg p-3 inline-block">
-                <p className="text-amber-800 font-medium">🍽️ Ordering for Table {tableNumber}</p>
+              <div className="glass-panel px-4 py-2 rounded-full flex items-center gap-2 text-amber-400 border border-amber-500/20">
+                <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                <span className="text-sm font-semibold uppercase tracking-wider">Table {tableNumber}</span>
               </div>
             )}
             {serviceType === 'delivery' && (
-              <div className="mb-4 bg-green-100 rounded-lg p-3 inline-block">
-                <p className="text-green-800 font-medium">🚚 Delivery Service - Address will be collected at checkout</p>
+              <div className="glass-panel px-4 py-2 rounded-full flex items-center gap-2 text-green-400 border border-green-500/20">
+                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                <span className="text-sm font-semibold uppercase tracking-wider">Express Delivery</span>
               </div>
             )}
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">Our Menu</h1>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              {serviceType === 'delivery' 
-                ? 'Choose from our delicious selection - delivered fresh to your door!' 
-                : 'Discover our carefully crafted dishes made with the finest ingredients'
-              }
-            </p>
           </div>
         </div>
-      </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex flex-col lg:flex-row gap-8">
-          {/* Category Sidebar */}
-          <div className="lg:w-1/4">
-            <div className="bg-white rounded-lg shadow-sm p-6 sticky top-24 animate-slide-in-left">
-              <h3 className="text-lg font-semibold mb-4">Categories</h3>
-              <nav className="space-y-2">
-                {categories.map((category) => (
+        {error && (
+          <div className="glass-panel p-4 mb-8 border border-red-500/30 flex items-center gap-3 text-red-400 animate-shake">
+            <Info className="w-5 h-5" />
+            <p className="text-sm font-medium">{error}</p>
+          </div>
+        )}
+
+        <div className="flex flex-col lg:flex-row gap-10">
+          <aside className="lg:w-1/4 space-y-6">
+            <div className="glass-panel p-8 rounded-3xl sticky top-28 border border-white/5 shadow-2xl">
+              <h3 className="text-xl font-bold mb-6 flex items-center gap-2 text-white">
+                <Filter className="w-5 h-5 text-amber-500" /> Categories
+              </h3>
+              <div className="space-y-3">
+                {categories.map((cat) => (
                   <button
-                    key={category.id}
-                    onClick={() => setSelectedCategory(category.id)}
-                    className={`w-full text-left px-4 py-3 rounded-lg font-medium transition-all duration-300 hover:scale-105 ${
-                      selectedCategory === category.id
-                        ? 'bg-amber-600 text-white shadow-lg transform scale-105'
-                        : 'text-gray-700 hover:bg-gray-100 hover:shadow-md'
+                    key={cat.id}
+                    onClick={() => setSelectedCategory(cat.id)}
+                    className={`group w-full text-left px-5 py-3 rounded-2xl font-medium transition-all duration-500 ${
+                      selectedCategory === cat.id
+                        ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-[0_0_20px_rgba(245,158,11,0.3)] scale-[1.03]'
+                        : 'text-gray-400 hover:bg-white/5 hover:text-white hover:pl-7'
                     }`}
                   >
-                    {category.name}
+                    {cat.name}
                   </button>
                 ))}
-              </nav>
+              </div>
 
-              {/* Cart Summary */}
               {state.items.length > 0 && (
-                <div className="mt-6 pt-6 border-t">
-                  <h4 className="font-semibold mb-2">Cart Summary</h4>
-                  <div className="text-sm text-gray-600 mb-2">
-                    {state.items.reduce((sum, item) => sum + item.quantity, 0)} items
-                  </div>
-                  <div className="text-lg font-semibold text-amber-600">
-                    ${state.items.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2)}
+                <div className="mt-10 pt-8 border-t border-white/10">
+                  <div className="flex justify-between items-end mb-4">
+                    <div>
+                      <p className="text-xs text-gray-500 uppercase font-bold tracking-widest mb-1">Your Cart</p>
+                      <p className="text-2xl font-bold text-white">${state.items.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2)}</p>
+                    </div>
+                    <div className="bg-amber-500/20 px-3 py-1 rounded-full text-amber-400 text-sm font-bold">
+                      {state.items.reduce((sum, item) => sum + item.quantity, 0)} items
+                    </div>
                   </div>
                   <Link
                     href="/cart"
-                    className="mt-3 w-full bg-amber-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-amber-700 transition-colors flex items-center justify-center space-x-2"
+                    className="group w-full bg-white text-black py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-amber-500 hover:text-white transition-all duration-300 active:scale-95 shadow-xl"
                   >
-                    <ShoppingCart size={16} />
-                    <span>View Cart</span>
+                    <ShoppingCart className="w-5 h-5" />
+                    <span>View Shopping Cart</span>
+                    <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
                   </Link>
                 </div>
               )}
             </div>
-          </div>
+          </aside>
 
-          {/* Menu Items */}
-          <div className="lg:w-3/4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <main className="lg:w-3/4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-fade-in-up">
               {filteredItems.map((item, index) => {
                 const quantity = getItemQuantity(item.id);
                 return (
                   <div 
                     key={item.id} 
-                    className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 transform animate-fade-in-up group" 
-                    style={{animationDelay: `${index * 0.1}s`}}
+                    className="glass-card group relative overflow-hidden rounded-3xl border border-white/5 hover:border-amber-500/30 transition-all duration-500 hover:-translate-y-2 shadow-2xl"
+                    style={{ animationDelay: `${index * 0.1}s` }}
                   >
-                    <div className="overflow-hidden">
+                    <div className="h-56 relative overflow-hidden">
                       <FoodImage 
                         foodName={item.name}
                         category={item.category}
-                        className="h-48 group-hover:scale-110 transition-transform duration-300"
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                       />
-                    </div>
-                    <div className="p-6">
-                      <div className="flex justify-between items-start mb-2">
-                        <h3 className="text-xl font-semibold text-gray-900 group-hover:text-amber-600 transition-colors duration-300">{item.name}</h3>
-                        <span className="text-xl font-bold text-amber-600 group-hover:scale-110 transition-transform duration-300 inline-block">${item.price.toFixed(2)}</span>
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60"></div>
+                      <div className="absolute top-4 right-4 bg-black/60 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/10 group-hover:bg-amber-500 transition-colors duration-300">
+                        <span className="text-white font-bold text-lg">${item.price.toFixed(2)}</span>
                       </div>
-                      <p className="text-gray-600 mb-4">{item.description}</p>
+                    </div>
+
+                    <div className="p-8">
+                      <h3 className="text-2xl font-bold text-white mb-2 group-hover:text-amber-500 transition-colors">{item.name}</h3>
+                      <p className="text-gray-400 text-sm font-light mb-8 line-clamp-2 leading-relaxed">
+                        {item.description}
+                      </p>
                       
                       <div className="flex items-center justify-between">
                         {quantity > 0 ? (
-                          <div className="flex items-center space-x-3">
+                          <div className="flex items-center bg-white/5 rounded-2xl p-1 border border-white/10">
                             <button
                               onClick={() => updateQuantity(item.id, quantity - 1)}
-                              className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300 hover:scale-110 transition-all duration-200 active:scale-95"
+                              className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center hover:bg-white/10 transition-all text-white"
                             >
-                              <Minus size={16} />
+                              <Minus size={18} />
                             </button>
-                            <span className="font-semibold text-lg animate-pulse">{quantity}</span>
+                            <span className="w-10 text-center font-bold text-white text-lg">{quantity}</span>
                             <button
-                              onClick={() => handleAddToCart(item)}
-                              className="w-8 h-8 rounded-full bg-amber-600 text-white flex items-center justify-center hover:bg-amber-700 hover:scale-110 transition-all duration-200 active:scale-95"
+                              onClick={() => addToCart(item)}
+                              className="w-10 h-10 rounded-xl bg-amber-500 flex items-center justify-center hover:bg-amber-600 transition-all text-white shadow-lg"
                             >
-                              <Plus size={16} className="hover:animate-wiggle" />
+                              <Plus size={18} />
                             </button>
                           </div>
                         ) : (
                           <button
-                            onClick={() => handleAddToCart(item)}
-                            className="bg-amber-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-amber-700 hover:scale-105 hover:shadow-lg transition-all duration-300 transform active:scale-95 group-hover:shadow-xl"
+                            onClick={() => addToCart(item)}
+                            className="bg-white text-black px-8 py-3.5 rounded-2xl font-bold flex items-center gap-2 hover:bg-amber-500 hover:text-white transition-all duration-300 shadow-lg active:scale-95"
                           >
-                            Add to Cart
+                            <Plus size={20} /> Add to Cart
                           </button>
                         )}
-                        <div className="text-right">
-                          <p className="text-lg font-bold text-amber-600">Total: ${(item.price * Math.max(1, quantity)).toFixed(2)}</p>
-                          {quantity > 0 && (
-                            <p className="text-sm text-gray-600">{quantity} × ${item.price.toFixed(2)}</p>
-                          )}
-                        </div>
+                        
+                        {quantity > 0 && (
+                          <div className="text-right">
+                            <p className="text-xs text-gray-500 uppercase tracking-widest font-bold mb-0.5">Subtotal</p>
+                            <p className="text-lg font-bold text-amber-500">${(item.price * quantity).toFixed(2)}</p>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
                 );
               })}
             </div>
-          </div>
+          </main>
         </div>
       </div>
     </div>
@@ -388,7 +242,7 @@ const getItemQuantity = (itemId: string) => {
 
 export default function MenuPage() {
   return (
-    <Suspense fallback={<div>Loading menu...</div>}>
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen text-gray-500 uppercase tracking-widest font-light">Loading...</div>}>
       <MenuContent />
     </Suspense>
   );

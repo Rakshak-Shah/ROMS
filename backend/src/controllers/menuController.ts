@@ -8,7 +8,13 @@ export const getAllMenuItems = async (req: Request, res: Response, next: NextFun
   try {
     const { category, available = true } = req.query;
     
-    const filter: any = { isAvailable: available === 'true' };
+    const filter: any = {};
+    if (available === 'false') {
+      filter.isAvailable = false;
+    } else {
+      filter.isAvailable = true; // Default to showing available items
+    }
+
     if (category) {
       filter.category = category;
     }
@@ -71,10 +77,14 @@ export const getMenuItemsByCategory = async (req: Request, res: Response, next: 
       return next(error);
     }
 
-    const menuItems = await MenuItem.find({
-      category,
-      isAvailable: available === 'true'
-    })
+    const filter: any = { category };
+    if (available === 'false') {
+      filter.isAvailable = false;
+    } else {
+      filter.isAvailable = true; // Default to showing available items
+    }
+
+    const menuItems = await MenuItem.find(filter)
       .populate('createdBy', 'name')
       .sort({ name: 1 });
 

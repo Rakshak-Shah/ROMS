@@ -32,7 +32,7 @@ Write-Host "📦 Starting Frontend Server (Port 3000)..." -ForegroundColor Cyan
 Write-Host ""
 
 # Start backend in a new window
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$PSScriptRoot\backend'; Write-Host '🔧 Backend Server Starting...' -ForegroundColor Magenta; npm start"
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$PSScriptRoot\backend'; Write-Host '🔧 Backend Server Starting...' -ForegroundColor Magenta; npm run dev"
 
 # Wait a moment before starting frontend
 Start-Sleep -Seconds 2

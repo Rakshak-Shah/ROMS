@@ -1,12 +1,16 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, Suspense } from 'react';
 import { useCart } from '../../contexts/CartContext';
 import { useSearchParams } from 'next/navigation';
-import { Plus, Minus, Trash2, CreditCard, DollarSign, MapPin, Edit, Truck } from 'lucide-react';
+import { Plus, Minus, Trash2, CreditCard, DollarSign, MapPin, Edit, Truck, ShoppingBag, ArrowRight, Wallet } from 'lucide-react';
 import Link from 'next/link';
 import DeliveryAddress from '../../components/deliveryaddress';
 import PaymentStatus from './payment-status';
+import { orderService, CreateOrderData } from '../../lib/api';
+import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '@/components/Toast';
+import SuccessModal from '@/components/SuccessModal';
 
 function CartContent() {
   const { 
@@ -19,38 +23,27 @@ function CartContent() {
     clearCart, 
     setDeliveryAddress 
   } = useCart();
+  const { showToast } = useToast();
   const [paymentMethod, setPaymentMethod] = useState<'online' | 'offline'>('online');
   const [isProcessing, setIsProcessing] = useState(false);
-  // DELIVERY ADDRESS MODAL STATE - Controls when address modal is shown
   const [showAddressModal, setShowAddressModal] = useState(false);
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const [lastOrderNumber, setLastOrderNumber] = useState<string>('');
+  const { user } = useAuth();
   
   const searchParams = useSearchParams();
   const paymentStatus = searchParams.get('payment');
   
-  // Check if this is a payment status redirect
   if (paymentStatus) {
     return <PaymentStatus />;
   }
 
-  const handleQuantityChange = (itemId: string, newQuantity: number) => {
-    updateQuantity(itemId, newQuantity);
-  };
-
-  const handleRemoveItem = (itemId: string) => {
-    removeFromCart(itemId);
-  };
-
-  // DELIVERY ADDRESS HANDLERS - Manage delivery address collection
   const handleAddressConfirm = (address: string) => {
     setDeliveryAddress(address);
     setShowAddressModal(false);
+    showToast('Delivery address updated', 'success');
   };
 
-  const handleAddressCancel = () => {
-    setShowAddressModal(false);
-  };
-
-  // ESEWA PAYMENT HANDLER - Integrates with eSewa payment gateway
   const handleEsewaPayment = async () => {
     const orderTotal = getFinalTotal();
     const orderDetails = {
@@ -62,17 +55,14 @@ function CartContent() {
       product_delivery_charge: getDeliveryFee(),
       success_url: `${window.location.origin}/cart?payment=success`,
       failure_url: `${window.location.origin}/cart?payment=failed`,
-      // Generate unique transaction ID
       transaction_uuid: `TXN-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
     };
 
     try {
-      // Create eSewa payment form dynamically
       const form = document.createElement('form');
       form.method = 'POST';
-      form.action = 'https://uat.esewa.com.np/epay/main'; // Use production URL for live: https://esewa.com.np/epay/main
+      form.action = 'https://uat.esewa.com.np/epay/main';
       
-      // Add form fields for eSewa
       const fields = {
         'tAmt': orderDetails.total_amount.toFixed(2),
         'amt': orderDetails.amount.toFixed(2), 
@@ -98,30 +88,26 @@ function CartContent() {
       document.body.removeChild(form);
       
     } catch (error) {
-      console.error('eSewa payment error:', error);
-      alert('Payment initialization failed. Please try again.');
+      showToast('Payment initialization failed. Please try again.', 'error');
     }
   };
 
   const handleCheckout = async () => {
-    // Validation
     if (state.items.length === 0) {
-      alert('Your cart is empty. Please add items before checking out.');
+      showToast('Your cart is empty', 'error');
       return;
     }
     
-    if (!paymentMethod) {
-      alert('Please select a payment method.');
+    if (!user) {
+      showToast('Please sign in to complete your order', 'info');
       return;
     }
 
-    // DELIVERY ADDRESS CHECK - Ask for address only at checkout for delivery orders
     if (state.serviceType === 'delivery' && !state.deliveryAddress) {
       setShowAddressModal(true);
       return;
     }
 
-    // ESEWA PAYMENT INTEGRATION - Redirect to eSewa for online payments
     if (paymentMethod === 'online') {
       await handleEsewaPayment();
       return;
@@ -129,44 +115,52 @@ function CartContent() {
 
     setIsProcessing(true);
     
-    // Simulate order processing
-    setTimeout(() => {
-      // CALCULATE FINAL ORDER TOTALS - Shows complete breakdown
-      const subtotal = getTotalPrice();
-      const deliveryFee = getDeliveryFee();
-      const tax = (subtotal + deliveryFee) * 0.085;
-      const orderTotal = getFinalTotal();
-      
-      let deliveryInfo = '';
-      if (state.serviceType === 'delivery') {
-        deliveryInfo = `\n\n🚚 Delivery Address:\n${state.deliveryAddress}\n${deliveryFee > 0 ? `Delivery Fee: $${deliveryFee.toFixed(2)}` : 'FREE DELIVERY! 🎉'}`;
-      } else if (state.tableNumber) {
-        deliveryInfo = `\n\n🍽️ Table ${state.tableNumber}`;
-      }
-      
-      const orderSummary = `Order placed successfully! ✅\n\n📋 Order Summary:\n- Items: ${state.items.length}\n- Subtotal: $${subtotal.toFixed(2)}${deliveryFee > 0 ? `\n- Delivery: $${deliveryFee.toFixed(2)}` : ''}\n- Tax: $${tax.toFixed(2)}\n- Total: $${orderTotal.toFixed(2)}\n\n💳 ${paymentMethod === 'online' ? 'Payment will be processed online.' : 'Please pay at the counter.'}${deliveryInfo}`;
-      
-      alert(orderSummary);
+    try {
+      const orderData: CreateOrderData = {
+        items: state.items.map(item => ({
+          menuItem: item.id,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          subtotal: item.price * item.quantity
+        })),
+        orderType: state.serviceType === 'delivery' ? 'delivery' : (state.tableNumber ? 'dine-in' : 'takeout'),
+        tableNumber: state.tableNumber ? parseInt(state.tableNumber) : undefined,
+        deliveryAddress: state.serviceType === 'delivery' && state.deliveryAddress ? { street: state.deliveryAddress } : undefined,
+        paymentMethod: 'cash',
+      };
+
+      const response = await orderService.create(orderData);
+      setLastOrderNumber(response?.orderNumber || 'ORD-PENDING');
+      setIsSuccessModalOpen(true);
       clearCart();
+    } catch (error) {
+      showToast('Failed to place order. Please try again.', 'error');
+    } finally {
       setIsProcessing(false);
-    }, 2000);
+    }
   };
 
   if (state.items.length === 0) {
     return (
-      <div className="bg-gray-50 min-h-screen py-16">
-        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="bg-white rounded-lg shadow-sm p-12">
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">Your Cart is Empty</h1>
-            <p className="text-gray-600 mb-8">
-              Looks like you haven&apos;t added any items to your cart yet.
-            </p>
-            <Link
-              href="/menu"
-              className="bg-amber-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-amber-700 transition-colors inline-block"
-            >
-              Browse Menu
-            </Link>
+      <div className="bg-[#0a0a0a] min-h-screen pt-40 pb-20 px-6">
+        <div className="max-w-2xl mx-auto text-center animate-fade-in-up">
+          <div className="glass-panel p-16 rounded-[60px] border border-white/10 shadow-2xl relative overflow-hidden">
+             <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 blur-3xl pointer-events-none"></div>
+             <div className="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-8">
+                <ShoppingBag className="text-gray-700" size={40} />
+             </div>
+             <h1 className="text-4xl font-black text-white mb-4 tracking-tight">Your Cart is Empty</h1>
+             <p className="text-gray-500 mb-12 font-light text-lg">
+               Indulge your senses. Discover our curated selection of gourmet masterpieces.
+             </p>
+             <Link
+               href="/menu"
+               className="group relative inline-flex px-10 py-5 bg-white text-black rounded-3xl font-black text-lg items-center gap-3 hover:bg-amber-500 hover:text-white transition-all duration-500 active:scale-95 shadow-xl"
+             >
+               Explore Menu
+               <ArrowRight size={20} className="group-hover:translate-x-2 transition-transform" />
+             </Link>
           </div>
         </div>
       </div>
@@ -174,266 +168,227 @@ function CartContent() {
   }
 
   return (
-    <div className="bg-gray-50 min-h-screen py-8">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-8 animate-fade-in-down">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">Your Order</h1>
-          {state.tableNumber && (
-            <div className="mb-4 bg-amber-100 rounded-lg p-3 inline-block animate-pulse">
-              <p className="text-amber-800 font-medium">🍽️ Table {state.tableNumber}</p>
-            </div>
-          )}
-          {state.serviceType === 'delivery' && (
-            <div className="mb-4 bg-green-100 rounded-lg p-3 inline-block animate-pulse">
-              <p className="text-green-800 font-medium">🚚 Delivery Service</p>
-            </div>
-          )}
+    <div className="bg-[#0a0a0a] min-h-screen pt-28 pb-20 relative">
+      <div className="absolute top-0 left-0 w-full h-[40vh] bg-amber-500/5 blur-[150px] pointer-events-none"></div>
+      
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="mb-12 animate-fade-in-down">
+          <h1 className="text-5xl md:text-6xl font-black text-white mb-6 tracking-tighter">Your <span className="text-gradient">Selection</span></h1>
+          <div className="flex flex-wrap gap-4">
+             {state.tableNumber && (
+               <div className="glass-panel px-4 py-2 rounded-full border border-amber-500/20 text-amber-500 flex items-center gap-2">
+                 <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                 <span className="text-xs font-black uppercase tracking-widest leading-none">Table {state.tableNumber}</span>
+               </div>
+             )}
+             {state.serviceType === 'delivery' && (
+               <div className="glass-panel px-4 py-2 rounded-full border border-emerald-500/20 text-emerald-500 flex items-center gap-2">
+                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                 <span className="text-xs font-black uppercase tracking-widest leading-none">In-Transit Gourmet</span>
+               </div>
+             )}
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Cart Items */}
-          <div className="lg:col-span-2">
-            {/* DELIVERY ADDRESS SECTION - Shows for delivery orders with address */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+          {/* Cart Items Area */}
+          <div className="lg:col-span-2 space-y-8">
             {state.serviceType === 'delivery' && state.deliveryAddress && (
-              <div className="bg-white rounded-lg shadow-sm mb-6 animate-slide-in-left">
-                <div className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <div className="bg-green-100 w-10 h-10 rounded-full flex items-center justify-center mr-3">
-                        <MapPin className="w-5 h-5 text-green-600" />
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-900">Delivery Address</h3>
-                        <p className="text-sm text-gray-600 mt-1">{state.deliveryAddress}</p>
-                      </div>
+              <div className="glass-panel p-8 rounded-[40px] border border-white/10 animate-fade-in-up shadow-2xl relative group overflow-hidden">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 blur-2xl pointer-events-none"></div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-5">
+                    <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
+                      <MapPin className="text-emerald-500" size={24} />
                     </div>
-                    <button
-                      onClick={() => setShowAddressModal(true)}
-                      className="flex items-center space-x-2 text-green-600 hover:text-green-700 font-medium transition-colors"
-                    >
-                      <Edit size={16} />
-                      <span>Change</span>
-                    </button>
+                    <div>
+                      <h3 className="text-lg font-black text-white uppercase tracking-tight">Delivery Destination</h3>
+                      <p className="text-gray-500 text-sm font-light mt-1">{state.deliveryAddress}</p>
+                    </div>
                   </div>
+                  <button
+                    onClick={() => setShowAddressModal(true)}
+                    className="flex items-center gap-2 text-emerald-500 hover:text-white font-black text-xs uppercase tracking-widest transition-all group"
+                  >
+                    <Edit size={14} className="group-hover:rotate-12 transition-transform" />
+                    Change
+                  </button>
                 </div>
               </div>
             )}
             
-            {/* ORDER ITEMS SECTION */}
-            <div className="bg-white rounded-lg shadow-sm animate-slide-in-left">
-              <div className="p-6 border-b">
-                <h2 className="text-xl font-semibold">Order Items</h2>
+            <div className="glass-panel rounded-[40px] border border-white/5 shadow-2xl overflow-hidden animate-fade-in-up stagger-1">
+              <div className="p-10 border-b border-white/5 bg-white/5">
+                <h2 className="text-2xl font-black text-white tracking-tight uppercase flex items-center gap-3">
+                  <ShoppingBag className="text-amber-500" size={24} /> Items in Cart
+                </h2>
               </div>
-              <div className="p-6 space-y-4">
+              <div className="divide-y divide-white/5">
                 {state.items.map((item, index) => (
                   <div 
                     key={item.id} 
-                    className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 hover:scale-102 transition-all duration-300 transform animate-fade-in-up group" 
-                    style={{animationDelay: `${index * 0.1}s`}}
+                    className="p-8 flex items-center gap-8 hover:bg-white/5 transition-colors group"
                   >
-                    <div className="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center">
-                      <span className="text-xs text-gray-500">IMG</span>
+                    <div className="w-24 h-24 rounded-[28px] bg-gradient-to-br from-amber-500/20 to-transparent flex items-center justify-center border border-white/10 flex-shrink-0 group-hover:scale-105 transition-transform duration-500">
+                      <ShoppingBag className="text-white/20" size={32} />
                     </div>
                     
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900">{item.name}</h3>
-                      <p className="text-sm text-gray-600 truncate">{item.description}</p>
-                      <p className="text-lg font-bold text-amber-600">${item.price.toFixed(2)}</p>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-start mb-2">
+                        <h3 className="text-xl font-black text-white tracking-tight group-hover:text-amber-500 transition-colors uppercase">{item.name}</h3>
+                        <p className="text-2xl font-black text-white tracking-tighter">${item.price.toFixed(2)}</p>
+                      </div>
+                      <p className="text-gray-500 text-sm font-light line-clamp-1 mb-6 leading-relaxed">{item.description}</p>
+                      
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center bg-[#0a0a0a] rounded-2xl p-1 border border-white/10">
+                          <button
+                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                            className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center hover:bg-white/10 transition-all text-white active:scale-90"
+                          >
+                            <Minus size={16} />
+                          </button>
+                          <span className="w-12 text-center font-black text-white text-lg">{item.quantity}</span>
+                          <button
+                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                            className="w-10 h-10 rounded-xl bg-amber-500 flex items-center justify-center hover:bg-amber-600 transition-all text-white active:scale-90 shadow-lg"
+                          >
+                            <Plus size={16} />
+                          </button>
+                        </div>
+                        
+                        <button
+                          onClick={() => removeFromCart(item.id)}
+                          className="flex items-center gap-2 text-gray-600 hover:text-red-400 font-bold text-xs uppercase tracking-widest transition-all"
+                        >
+                          <Trash2 size={14} /> Remove
+                        </button>
+                      </div>
                     </div>
-
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
-                        className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300 hover:scale-110 transition-all duration-200 active:scale-95"
-                      >
-                        <Minus size={16} />
-                      </button>
-                      <span className="w-8 text-center font-semibold animate-pulse">{item.quantity}</span>
-                      <button
-                        onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
-                        className="w-8 h-8 rounded-full bg-amber-600 text-white flex items-center justify-center hover:bg-amber-700 hover:scale-110 transition-all duration-200 active:scale-95"
-                      >
-                        <Plus size={16} className="hover:animate-wiggle" />
-                      </button>
-                    </div>
-
-                    <button
-                      onClick={() => handleRemoveItem(item.id)}
-                      className="text-red-500 hover:text-red-700 p-2 transition-all duration-300 hover:scale-110 active:scale-95"
-                    >
-                      <Trash2 size={16} className="hover:animate-wiggle" />
-                    </button>
                   </div>
                 ))}
               </div>
             </div>
-            
-            {/* SPACING GAP - Visual separation between cart items and bill */}
-            <div className="h-8"></div>
           </div>
 
-          {/* ORDER SUMMARY SECTION - Right side shows bill and payment */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-sm p-6 sticky top-24 animate-slide-in-right">
-              <h2 className="text-xl font-semibold mb-6">Order Summary</h2>
-              
-              {/* BILL BREAKDOWN - Shows all charges including delivery */}
-              <div className="space-y-3 mb-6">
-                <div className="flex justify-between">
-                  <span>Subtotal:</span>
-                  <span>${getTotalPrice().toFixed(2)}</span>
-                </div>
-                
-                {/* DELIVERY FEE DISPLAY - Only shows for delivery orders */}
-                {state.serviceType === 'delivery' && (
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center">
-                      <Truck size={14} className="mr-1 text-green-600" />
-                      <span>Delivery:</span>
-                    </div>
-                    <div className="text-right">
-                      {getDeliveryFee() > 0 ? (
-                        <span>${getDeliveryFee().toFixed(2)}</span>
-                      ) : (
-                        <div className="flex flex-col items-end">
-                          <span className="text-green-600 font-medium">FREE</span>
-                          <span className="text-xs text-gray-500">Orders ${state.freeDeliveryThreshold}+</span>
-                        </div>
-                      )}
-                    </div>
+          {/* Checkout/Summary Sidebar */}
+          <aside className="animate-fade-in-up stagger-2">
+            <div className="glass-panel p-10 rounded-[50px] border border-white/10 sticky top-28 shadow-2xl relative overflow-hidden">
+               <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 blur-3xl pointer-events-none"></div>
+               
+               <h2 className="text-2xl font-black text-white mb-10 tracking-tight uppercase">Billing Details</h2>
+               
+               <div className="space-y-6 mb-12">
+                  <div className="flex justify-between items-center group">
+                    <span className="text-gray-500 font-bold uppercase text-[10px] tracking-[0.2em]">Subtotal</span>
+                    <span className="text-white font-black text-lg">${getTotalPrice().toFixed(2)}</span>
                   </div>
-                )}
-                
-                <div className="flex justify-between">
-                  <span>Tax (8.5%):</span>
-                  <span>${((getTotalPrice() + getDeliveryFee()) * 0.085).toFixed(2)}</span>
-                </div>
-                
-                {/* VISUAL SEPARATOR */}
-                <div className="border-t pt-3 mt-4">
-                  <div className="flex justify-between font-bold text-lg">
-                    <span>Total:</span>
-                    <span className="text-amber-600">${getFinalTotal().toFixed(2)}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Payment Method Selection */}
-              <div className="mb-6">
-                <h3 className="font-semibold mb-3">Payment Method</h3>
-                <div className="space-y-2">
-                  <label className="flex items-center space-x-3 cursor-pointer">
-                    <input
-                      type="radio"
-                      value="online"
-                      checked={paymentMethod === 'online'}
-                      onChange={(e) => setPaymentMethod(e.target.value as 'online')}
-                      className="text-amber-600 focus:ring-amber-500"
-                    />
-                    <div className="flex items-center space-x-2">
-                      <CreditCard size={16} />
-                      <span>Pay Online</span>
-                    </div>
-                  </label>
-                  <label className="flex items-center space-x-3 cursor-pointer">
-                    <input
-                      type="radio"
-                      value="offline"
-                      checked={paymentMethod === 'offline'}
-                      onChange={(e) => setPaymentMethod(e.target.value as 'offline')}
-                      className="text-amber-600 focus:ring-amber-500"
-                    />
-                    <div className="flex items-center space-x-2">
-                      <DollarSign size={16} />
-                      <span>Pay at Counter</span>
-                    </div>
-                  </label>
-                </div>
-              </div>
-
-              {/* Checkout Button */}
-              <button
-                onClick={handleCheckout}
-                disabled={isProcessing}
-                className="w-full bg-amber-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-amber-700 hover:scale-105 hover:shadow-lg transition-all duration-300 transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-              >
-                <span className={isProcessing ? 'loading-dots' : ''}>
-                  {isProcessing 
-                    ? 'Processing' 
-                    : paymentMethod === 'online' 
-                      ? `Pay with eSewa - $${getFinalTotal().toFixed(2)}`
-                      : `Place Order - $${getFinalTotal().toFixed(2)}`
-                  }
-                </span>
-              </button>
-
-              <div className="mt-4 text-center">
-                <Link
-                  href="/menu"
-                  className="text-amber-600 hover:text-amber-700 font-medium"
-                >
-                  ← Continue Shopping
-                </Link>
-              </div>
-
-              {/* DELIVERY ORDER INFO - Shows delivery details and requirements */}
-              {state.serviceType === 'delivery' && (
-                <div className="mt-6 p-4 bg-green-50 rounded-lg">
-                  <h4 className="font-semibold text-green-800 mb-2">🚚 Delivery Order</h4>
-                  {state.deliveryAddress ? (
-                    <div className="text-sm text-green-700 space-y-1">
-                      <p>✅ Delivery address confirmed</p>
-                      <p>📍 {state.deliveryAddress}</p>
-                      {getDeliveryFee() === 0 && (
-                        <p className="font-medium">🎉 Free delivery on this order!</p>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="text-sm text-green-700">
-                      <p>📍 Delivery address will be collected when you place the order</p>
+                  
+                  {state.serviceType === 'delivery' && (
+                    <div className="flex justify-between items-center group">
+                      <div className="flex items-center gap-2">
+                        <Truck size={14} className="text-emerald-500" />
+                        <span className="text-gray-500 font-bold uppercase text-[10px] tracking-[0.2em]">Service Fee</span>
+                      </div>
+                      <span className={getDeliveryFee() === 0 ? 'text-emerald-500 font-black' : 'text-white font-black'}>
+                        {getDeliveryFee() > 0 ? `$${getDeliveryFee().toFixed(2)}` : 'GRATIS'}
+                      </span>
                     </div>
                   )}
-                </div>
-              )}
-              
-              {/* ESEWA PAYMENT INFO */}
-              {paymentMethod === 'online' && (
-                <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-                  <h4 className="font-semibold text-blue-800 mb-2">💳 eSewa Payment</h4>
-                  <div className="text-sm text-blue-700 space-y-1">
-                    <p>• You will be redirected to eSewa for secure payment</p>
-                    <p>• Please keep your eSewa credentials ready</p>
-                    <p>• Payment amount: NPR {getFinalTotal().toFixed(2)}</p>
+                  
+                  <div className="flex justify-between items-center group">
+                    <span className="text-gray-500 font-bold uppercase text-[10px] tracking-[0.2em]">Luxury Tax (8.5%)</span>
+                    <span className="text-white font-black text-lg">${((getTotalPrice() + getDeliveryFee()) * 0.085).toFixed(2)}</span>
                   </div>
-                </div>
-              )}
-              {state.tableNumber && !state.serviceType && (
-                <div className="mt-6 p-4 bg-amber-50 rounded-lg">
-                  <h4 className="font-semibold text-amber-800 mb-2">🍽️ Dine-In Order</h4>
-                  <p className="text-sm text-amber-700">
-                    Your order will be delivered to Table {state.tableNumber}
-                  </p>
-                </div>
-              )}
+                  
+                  <div className="h-px bg-white/5 my-6"></div>
+                  
+                  <div className="flex justify-between items-end">
+                    <div>
+                        <p className="text-xs text-gray-400 font-black uppercase tracking-widest mb-1">Total Amount</p>
+                        <p className="text-5xl font-black text-white tracking-tighter">${getFinalTotal().toFixed(2)}</p>
+                    </div>
+                    <div className="bg-amber-500/20 px-3 py-1 rounded-full text-amber-500 text-[10px] font-black uppercase tracking-tighter">Verified</div>
+                  </div>
+               </div>
+
+               {/* Payment Strategy Selection */}
+               <div className="mb-12">
+                  <p className="text-xs text-gray-500 font-black uppercase tracking-widest mb-6 border-l-2 border-amber-500 pl-4">Payment Strategy</p>
+                  <div className="grid grid-cols-1 gap-4">
+                    <button
+                      onClick={() => setPaymentMethod('online')}
+                      className={`flex items-center justify-between p-5 rounded-3xl transition-all border ${
+                        paymentMethod === 'online' 
+                          ? 'bg-gradient-to-r from-amber-500/20 to-transparent border-amber-500/40 text-white' 
+                          : 'bg-white/5 border-white/5 text-gray-500 hover:text-gray-300'
+                      }`}
+                    >
+                      <div className="flex items-center gap-4">
+                        <Wallet size={20} className={paymentMethod === 'online' ? 'text-amber-500' : ''} />
+                        <span className="font-black text-xs uppercase tracking-widest">eSewa Digital</span>
+                      </div>
+                      {paymentMethod === 'online' && <div className="w-2 h-2 rounded-full bg-amber-500 shadow-glow"></div>}
+                    </button>
+
+                    <button
+                      onClick={() => setPaymentMethod('offline')}
+                      className={`flex items-center justify-between p-5 rounded-3xl transition-all border ${
+                        paymentMethod === 'offline' 
+                          ? 'bg-gradient-to-r from-emerald-500/20 to-transparent border-emerald-500/40 text-white' 
+                          : 'bg-white/5 border-white/5 text-gray-500 hover:text-gray-300'
+                      }`}
+                    >
+                      <div className="flex items-center gap-4">
+                        <DollarSign size={20} className={paymentMethod === 'offline' ? 'text-emerald-500' : ''} />
+                        <span className="font-black text-xs uppercase tracking-widest">At Counter</span>
+                      </div>
+                      {paymentMethod === 'offline' && <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-glow"></div>}
+                    </button>
+                  </div>
+               </div>
+
+               <button
+                 onClick={handleCheckout}
+                 disabled={isProcessing}
+                 className="group w-full bg-white text-black py-6 rounded-[32px] font-black text-xl hover:bg-amber-500 hover:text-white transition-all duration-500 shadow-[0_20px_40px_rgba(0,0,0,0.4)] active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50"
+               >
+                 {isProcessing ? 'AUTHENTICATING...' : (paymentMethod === 'online' ? 'PAY SECURELY' : 'PLACE ORDER')}
+                 <ArrowRight size={22} className="opacity-0 group-hover:opacity-100 group-hover:translate-x-2 transition-all" />
+               </button>
+
+               <div className="mt-10 text-center">
+                  <Link href="/menu" className="text-xs font-black uppercase tracking-[0.3em] text-gray-600 hover:text-amber-500 transition-colors">
+                    ← Back to selection
+                  </Link>
+               </div>
             </div>
-          </div>
+          </aside>
         </div>
-        
-        {/* DELIVERY ADDRESS MODAL - Appears when user needs to set address */}
-        <DeliveryAddress
-          isOpen={showAddressModal}
-          currentAddress={state.deliveryAddress || ''}
-          onConfirm={handleAddressConfirm}
-          onCancel={handleAddressCancel}
-        />
       </div>
+
+      <DeliveryAddress
+        isOpen={showAddressModal}
+        currentAddress={state.deliveryAddress || ''}
+        onConfirm={handleAddressConfirm}
+        onCancel={() => setShowAddressModal(false)}
+      />
+
+      <SuccessModal
+        isOpen={isSuccessModalOpen}
+        onClose={() => setIsSuccessModalOpen(false)}
+        title="Order Finalized"
+        message="Your gourmet selection is now being prepared by our executive chefs."
+        orderNumber={lastOrderNumber}
+        type="order"
+      />
     </div>
   );
 }
 
 export default function CartPage() {
   return (
-    <Suspense fallback={<div>Loading cart...</div>}>
+    <Suspense fallback={<div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center text-gray-600 uppercase tracking-widest font-black text-xs animate-pulse">Synchronizing Cart...</div>}>
       <CartContent />
     </Suspense>
   );

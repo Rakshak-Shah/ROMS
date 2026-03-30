@@ -1,151 +1,157 @@
+'use client';
+
 import Link from 'next/link';
-import { Clock, Star, Gift } from 'lucide-react';
+import { Clock, Star, Gift, ArrowRight, Sparkles, ChefHat } from 'lucide-react';
 
 const specialOffers = [
   {
     id: 1,
-    title: 'Happy Hour Special',
-    description: '50% off on all appetizers and drinks',
-    validTime: 'Monday - Friday, 3:00 PM - 6:00 PM',
+    title: 'Happy Hour Luxe',
+    description: '50% off select appetizers & signature cocktails curated for the evening.',
+    validTime: 'Mon - Fri, 3 PM - 6 PM',
     discount: '50% OFF',
     type: 'time-based',
-    color: 'bg-blue-500'
+    gradient: 'from-amber-600/40 to-orange-600/20'
   },
   {
     id: 2,
-    title: 'Date Night Package',
-    description: 'Three-course meal for two with complimentary wine',
-    validTime: 'Available every evening',
-    discount: '$89.99',
+    title: 'Epicurean Night',
+    description: 'Four-course degustation for two with sommelier-picked wine pairings.',
+    validTime: 'Available Daily',
+    discount: '$129.99',
     type: 'package',
-    color: 'bg-pink-500'
+    gradient: 'from-pink-600/40 to-rose-600/20'
   },
   {
     id: 3,
-    title: 'Weekend Brunch',
-    description: 'Unlimited brunch buffet with bottomless mimosas',
-    validTime: 'Saturday - Sunday, 10:00 AM - 2:00 PM',
-    discount: '$35/person',
+    title: 'Imperial Brunch',
+    description: 'Unlimited gourmet buffet featuring hand-carved stations & mimosa towers.',
+    validTime: 'Sat - Sun, 10 AM - 2 PM',
+    discount: '$45 / PAX',
     type: 'weekend',
-    color: 'bg-orange-500'
+    gradient: 'from-blue-600/40 to-indigo-600/20'
   },
   {
     id: 4,
-    title: 'Family Feast',
-    description: 'Special family menu for 4+ people with kids eat free',
-    validTime: 'Available daily',
-    discount: 'Kids Free',
+    title: 'Legacy Feast',
+    description: 'Bespoke family menu for parties of 6 or more. Multi-generational favorites.',
+    validTime: 'Available Daily',
+    discount: 'FAMILY TIER',
     type: 'family',
-    color: 'bg-green-500'
+    gradient: 'from-emerald-600/40 to-teal-600/20'
   },
   {
     id: 5,
-    title: 'Birthday Special',
-    description: 'Free dessert and special celebration for birthday guests',
-    validTime: 'Valid with ID on birthday',
-    discount: 'Free Dessert',
+    title: 'Royal Birthday',
+    description: 'Complimentary signature dessert & personalized tableside celebration.',
+    validTime: 'Valid on Birthdays',
+    discount: 'FREE TREAT',
     type: 'birthday',
-    color: 'bg-purple-500'
+    gradient: 'from-purple-600/40 to-violet-600/20'
   },
   {
     id: 6,
-    title: 'Chef&apos;s Tasting Menu',
-    description: 'Seven-course tasting menu showcasing our chef&apos;s finest creations',
-    validTime: 'Available Thursday - Saturday',
-    discount: '$125/person',
+    title: 'Chef\'s Masterpiece',
+    description: 'Nine-course journey showcasing our chef\'s most experimental creations.',
+    validTime: 'Thu - Sat, 7 PM',
+    discount: '$185 / PAX',
     type: 'premium',
-    color: 'bg-amber-500'
+    gradient: 'from-amber-500/60 to-yellow-600/20'
   }
 ];
 
 export default function SpecialPage() {
   return (
-    <div className="bg-gray-50 min-h-screen">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-amber-600 to-orange-600 text-white py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">Special Offers</h1>
-          <p className="text-xl md:text-2xl max-w-3xl mx-auto">
-            Discover our exclusive deals and seasonal promotions for an exceptional dining experience
+    <div className="min-h-screen bg-[#0a0a0a] pt-28 pb-20 relative overflow-hidden">
+      {/* Background Aesthetics */}
+      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-amber-500/5 blur-[120px] pointer-events-none -z-10 animate-float"></div>
+      
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="text-center mb-24 animate-fade-in-down">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass-panel border border-amber-500/20 mb-6 group">
+            <Sparkles size={14} className="text-amber-500 group-hover:rotate-45 transition-transform" />
+            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-amber-500">Seasonal Collections</span>
+          </div>
+          <h1 className="text-6xl md:text-8xl font-black text-white mb-8 tracking-tighter leading-tight">
+            Exclusive <span className="text-gradient">Privileges</span>
+          </h1>
+          <p className="text-xl text-gray-400 font-light max-w-3xl mx-auto leading-relaxed">
+            Curated experiences for the discerning palate. Discover our limited-time culinary programs and private memberships.
           </p>
         </div>
-      </div>
 
-      {/* Special Offers Grid */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {specialOffers.map((offer) => (
-            <div key={offer.id} className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
-              <div className={`${offer.color} text-white p-6 relative`}>
-                <div className="absolute top-4 right-4">
-                  {offer.type === 'time-based' && <Clock size={24} />}
-                  {offer.type === 'package' && <Gift size={24} />}
-                  {offer.type === 'weekend' && <Star size={24} />}
-                  {offer.type === 'family' && <Gift size={24} />}
-                  {offer.type === 'birthday' && <Gift size={24} />}
-                  {offer.type === 'premium' && <Star size={24} />}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+          {specialOffers.map((offer, index) => (
+            <div 
+              key={offer.id} 
+              className="glass-panel group relative overflow-hidden rounded-[40px] border border-white/10 hover:border-amber-500/30 transition-all duration-500 hover:-translate-y-4 shadow-2xl animate-fade-in-up"
+              style={{ animationDelay: `${index * 0.1}s` }}
+            >
+              {/* Header Gradient */}
+              <div className={`h-48 relative bg-gradient-to-br ${offer.gradient} p-8 flex flex-col justify-end overflow-hidden`}>
+                <div className="absolute top-8 right-8 w-12 h-12 bg-white/10 backdrop-blur-xl rounded-2xl flex items-center justify-center border border-white/20 group-hover:scale-110 transition-transform">
+                  {offer.type === 'time-based' && <Clock className="text-white" size={24} />}
+                  {offer.type === 'package' && <ChefHat className="text-white" size={24} />}
+                  {offer.type === 'weekend' && <Star className="text-white" size={24} />}
+                  {offer.type === 'family' && <Gift className="text-white" size={24} />}
+                  {offer.type === 'birthday' && <Sparkles className="text-white" size={24} />}
+                  {offer.type === 'premium' && <Star className="text-white" size={24} />}
                 </div>
-                <h3 className="text-2xl font-bold mb-2">{offer.title}</h3>
-                <div className="text-3xl font-bold">{offer.discount}</div>
+                
+                <h3 className="text-sm font-black text-white/60 uppercase tracking-[0.3em] mb-2">{offer.validTime}</h3>
+                <div className="text-4xl font-black text-white tracking-tight">{offer.discount}</div>
               </div>
-              <div className="p-6">
-                <p className="text-gray-600 mb-4">{offer.description}</p>
-                <div className="flex items-center space-x-2 text-sm text-gray-500 mb-6">
-                  <Clock size={16} />
-                  <span>{offer.validTime}</span>
-                </div>
+
+              <div className="p-10">
+                <h3 className="text-2xl font-black text-white mb-4 tracking-tight group-hover:text-amber-500 transition-colors uppercase">{offer.title}</h3>
+                <p className="text-gray-400 text-sm font-light mb-8 leading-relaxed h-12 overflow-hidden">
+                  {offer.description}
+                </p>
+                
                 <Link
                   href="/menu"
-                  className="w-full bg-amber-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-amber-700 transition-colors text-center block"
+                  className="group w-full bg-white text-black py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-amber-500 hover:text-white transition-all duration-300 active:scale-95 shadow-xl"
                 >
-                  Order Now
+                  Experience Now
+                  <ArrowRight size={14} className="opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
                 </Link>
               </div>
+              
+              {/* Internal Accent */}
+              <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-white/5 rounded-full blur-2xl group-hover:bg-amber-500/10 transition-colors duration-700"></div>
             </div>
           ))}
         </div>
-      </div>
 
-      {/* Terms and Conditions */}
-      <div className="bg-white py-16">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-2xl font-bold text-center text-gray-900 mb-8">Terms & Conditions</h2>
-          <div className="bg-gray-50 rounded-lg p-6">
-            <div className="space-y-4 text-sm text-gray-600">
-              <p>• Special offers cannot be combined with other promotions or discounts</p>
-              <p>• Happy Hour special is valid for dine-in customers only</p>
-              <p>• Date Night Package requires advance reservation</p>
-              <p>• Weekend Brunch requires reservation and is subject to availability</p>
-              <p>• Family Feast offer: Kids 12 and under eat free with purchase of 2 adult entrees</p>
-              <p>• Birthday special requires valid ID showing birthday date</p>
-              <p>• Chef&apos;s Tasting Menu has limited availability and requires 24-hour advance booking</p>
-              <p>• All offers are subject to availability and may be modified or discontinued without notice</p>
-              <p>• Gratuity is not included in special offer pricing</p>
+        {/* Philosophy/Terms Section */}
+        <div className="mt-32 glass-panel p-16 rounded-[60px] border border-white/5 relative overflow-hidden animate-fade-in-up shadow-2xl">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 blur-[120px] pointer-events-none"></div>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
+            <div>
+              <h2 className="text-4xl font-black text-white mb-8 tracking-tight">Our Privilege <br/> <span className="text-amber-500">Philosophy</span></h2>
+              <p className="text-gray-400 text-lg font-light leading-relaxed mb-6">
+                We believe that dining is more than just a meal—it is a sacred ritual. Our special offers are designed as invitations to explore the depths of our culinary craft at a privileged access.
+              </p>
+              <p className="text-sm text-gray-500 font-medium">
+                * Membership tiers are re-evaluated annually based on engagement and patronage. Terms of service apply to all promotional cycles.
+              </p>
             </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Call to Action */}
-      <div className="bg-amber-600 text-white py-16">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl font-bold mb-4">Ready to Enjoy These Offers?</h2>
-          <p className="text-xl mb-8">
-            Make a reservation or order online to take advantage of our special deals
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              href="/reservations"
-              className="bg-white text-amber-600 px-8 py-4 rounded-full font-semibold text-lg hover:bg-gray-100 transition-colors"
-            >
-              Make Reservation
-            </Link>
-            <Link
-              href="/menu"
-              className="border-2 border-white text-white px-8 py-4 rounded-full font-semibold text-lg hover:bg-white hover:text-amber-600 transition-colors"
-            >
-              Order Online
-            </Link>
+            
+            <div className="space-y-6">
+              {[
+                'Single-use per reservation cycle',
+                'Advanced booking required for Tasting Menus',
+                'Happy Hour valid in Blue Lounge only',
+                'Birthday verification via verified ID',
+                'Gratuity calculated on pre-discount total'
+              ].map((term, i) => (
+                <div key={i} className="flex items-center gap-4 group">
+                  <div className="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)] group-hover:scale-150 transition-transform"></div>
+                  <p className="text-gray-300 font-semibold tracking-wide text-sm">{term}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>

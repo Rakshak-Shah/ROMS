@@ -141,8 +141,8 @@ export const menuService = {
   // Get all menu items
   async getAll(): Promise<ApiMenuItem[]> {
     try {
-      const response = await apiGet<ApiResponse<ApiMenuItem[]>>('/api/menu');
-      return response.data || [];
+      const response = await apiGet<ApiResponse<{ menuItems: ApiMenuItem[] }>>('/api/menu');
+      return response.data?.menuItems || [];
     } catch (error) {
       console.error('Error fetching menu items:', error);
       return [];
@@ -152,8 +152,8 @@ export const menuService = {
   // Get menu items by category
   async getByCategory(category: string): Promise<ApiMenuItem[]> {
     try {
-      const response = await apiGet<ApiResponse<ApiMenuItem[]>>(`/api/menu?category=${category}`);
-      return response.data || [];
+      const response = await apiGet<ApiResponse<{ menuItems: ApiMenuItem[] }>>(`/api/menu?category=${category}`);
+      return response.data?.menuItems || [];
     } catch (error) {
       console.error('Error fetching menu items by category:', error);
       return [];
@@ -163,8 +163,8 @@ export const menuService = {
   // Get single menu item
   async getById(id: string): Promise<ApiMenuItem | null> {
     try {
-      const response = await apiGet<ApiResponse<ApiMenuItem>>(`/api/menu/${id}`);
-      return response.data || null;
+      const response = await apiGet<ApiResponse<{ menuItem: ApiMenuItem }>>(`/api/menu/${id}`);
+      return response.data?.menuItem || null;
     } catch (error) {
       console.error('Error fetching menu item:', error);
       return null;
@@ -182,7 +182,7 @@ export type CreateOrderData = {
     subtotal: number;
     specialInstructions?: string;
   }>;
-  orderType: 'dine-in' | 'delivery' | 'pickup';
+  orderType: 'dine-in' | 'delivery' | 'takeout';
   tableNumber?: number;
   deliveryAddress?: {
     street: string;
@@ -211,8 +211,8 @@ export const orderService = {
   // Create a new order
   async create(orderData: CreateOrderData): Promise<OrderResponse | null> {
     try {
-      const response = await apiPost<ApiResponse<OrderResponse>>('/api/orders', orderData);
-      return response.data || null;
+      const response = await apiPost<ApiResponse<{ order: OrderResponse }>>('/api/orders', orderData);
+      return response.data?.order || null;
     } catch (error) {
       console.error('Error creating order:', error);
       throw error;
@@ -222,8 +222,8 @@ export const orderService = {
   // Get user's order history
   async getMyOrders(): Promise<any[]> {
     try {
-      const response = await apiGet<ApiResponse<any[]>>('/api/orders/my-orders');
-      return response.data || [];
+      const response = await apiGet<ApiResponse<{ orders: any[] }>>('/api/orders/my-orders');
+      return response.data?.orders || [];
     } catch (error) {
       console.error('Error fetching orders:', error);
       return [];
@@ -233,8 +233,8 @@ export const orderService = {
   // Get single order by ID
   async getById(id: string): Promise<any | null> {
     try {
-      const response = await apiGet<ApiResponse<any>>(`/api/orders/${id}`);
-      return response.data || null;
+      const response = await apiGet<ApiResponse<{ order: any }>>(`/api/orders/${id}`);
+      return response.data?.order || null;
     } catch (error) {
       console.error('Error fetching order:', error);
       return null;
